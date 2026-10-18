@@ -159,4 +159,49 @@ buildReport=function(){
  return result;
 };
 window.TakumiQuality={select,uniqueCount,audit,refresh:rebuild,priorityForUnit:unitNeed};
+/* Visible audit: read-only diagnostics; does not mutate historic progress. */
+const panel=document.querySelector('.study-panel');
+if(panel&&document.querySelector('.wrap')){
+ const trigger=document.createElement('button');
+ trigger.className='secondary';trigger.textContent='📊 出題品質・苦手単元の優先度';
+ trigger.style.width='100%';trigger.style.marginTop='9px';
+ trigger.onclick=()=>openQualityAudit('math');
+ panel.appendChild(trigger);
+ const shell=document.createElement('section');shell.className='screen';shell.id='qualityAudit';
+ shell.innerHTML='<button class="back" onclick="show(\'home\')">← ホーム</button><h2>📊 出題品質・優先度</h2><div id="quality-audit-main"></div>';
+ document.querySelector('.wrap').appendChild(shell);
+ const style=document.createElement('style');
+ style.textContent='.qa-card{background:white;padding:13px;margin:12px 0;border-radius:12px}.qa-tabs{display:flex;flex-wrap:wrap;gap:6px}.qa-tabs button{padding:8px 12px;border:1px solid #ddd;border-radius:8px;background:white;font-size:12px}.qa-tabs button.on{background:#171717;color:white}.qa-line{display:flex;gap:10px;justify-content:space-between;border-bottom:1px solid #eee;padding:9px 0;font-size:13px;align-items:center}.qa-line span:last-child{text-align:right}.qa-muted{font-size:12px;color:#666;line-height:1.6}';
+ document.head.appendChild(style);
+}
+function openQualityAudit(cat='math'){
+ const root=document.getElementById('quality-audit-main');if(!root)return;
+ root.replaceChildren();
+ const all=audit(),ev=evidence();
+ const summary=document.createElement('div');summary.className='qa-card';
+ const h=document.createElement('b');h.textContent='登録 '+all.total+'問 ／ 独立した出題候補 '+all.distinct+'問';summary.appendChild(h);
+ const notes=document.createElement('p');notes.className='qa-muted';notes.textContent='同一問題文 '+all.duplicates+'問は出題時に重複を抑制。過去の記録は削除していません。正答表記の矛盾検出 '+all.conflicts+'件。';summary.appendChild(notes);root.appendChild(summary);
+ const tabs=document.createElement('div');tabs.className='qa-tabs';
+ for(const subject of ['math','english','japanese','science','history','geography','waka']){
+  const b=document.createElement('button');b.textContent=labels[subject]||subject;
+  b.className=cat===subject?'on':'';
+  b.onclick=()=>openQualityAudit(subject);tabs.appendChild(b);
+ }
+ root.appendChild(tabs);
+ const desc=document.createElement('p');desc.className='qa-muted';
+ desc.textContent='出題優先度は、保護者確認済み紙課題の評価・新しい自力誤答・復習間隔から決まります。過去の不確かなアプリ正答率は含めません。数字は順位付け用であり、学力の点数ではありません。';
+ root.appendChild(desc);
+ const card=document.createElement('div');card.className='qa-card';
+ const units=Object.entries(all.units[cat]||{}).map(([u,count])=>({u,count,grade:grade(cat,u),need:unitNeed(cat,u,ev)})).sort((a,b)=>b.need-a.need);
+ for(const x of units){
+  const row=document.createElement('div');row.className='qa-line';
+  const l=document.createElement('span');l.textContent=x.u+'（独立 '+x.count+'問）';
+  const r=document.createElement('span');
+  const mark={good:'○',maybe:'△',weak:'×'}[x.grade]||'未評価';
+  r.textContent='紙'+mark+' ／ 優先 '+Math.round(x.need);row.append(l,r);card.appendChild(row);
+ }
+ root.appendChild(card);show('qualityAudit');
+}
+window.openQualityAudit=openQualityAudit;
+
 })();
