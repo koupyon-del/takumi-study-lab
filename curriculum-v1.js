@@ -292,13 +292,21 @@ function isAllowed(cat,q,mode){
 function chooseSet(cat,n=10,mode=cfg().mode){
  const pool=(data[cat]||[]).filter(q=>isAllowed(cat,q,mode));
  if(!pool.length)return [];
- const ranked=pool.map(q=>{const r=rec(q.id);
-   const score=priorityForCurriculum(q,r,cat,mode);
-   return {q,score};
- }).sort((a,b)=>b.score-a.score);
- const out=[],used=new Set();
- for(const x of ranked){const key=x.q.q.replace(/^【[^】]+】/,'');if(!used.has(key)){out.push(x.q);used.add(key);}if(out.length>=n)break;}
- for(const x of ranked){if(out.length>=n)break;if(!out.includes(x.q))out.push(x.q);}
+ const ranked=pool.map(q=>({q,score:priorityForCurriculum(q,rec(q.id),cat,mode)})).sort((a,b)=>b.score-a.score);
+ const out=[],usedQuestions=new Set(),usedUnits=new Set();
+ /* First pass: cover distinct units; next pass: prioritise weak and unseen questions. */
+ for(const x of ranked){
+   if(usedUnits.has(x.q.u))continue;
+   out.push(x.q);usedQuestions.add(x.q.q.replace(/^【[^】]+】/,''));
+   usedUnits.add(x.q.u);
+   if(out.length>=n)return out;
+ }
+ for(const x of ranked){
+   const key=x.q.q.replace(/^【[^】]+】/,'');
+   if(!usedQuestions.has(key)){out.push(x.q);usedQuestions.add(key)}
+   if(out.length>=n)return out;
+ }
+ for(const x of ranked){if(out.length>=n)break;if(!out.includes(x.q))out.push(x.q)}
  return out;
 }
 function priorityForCurriculum(q,r,cat,mode){
