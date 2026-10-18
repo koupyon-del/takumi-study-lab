@@ -296,6 +296,7 @@ function confirmSubject(cat){
 function tier(cat,u){return topicPlan[cat]?.find(t=>t[0]===u)?.[1]||'授業'}
 function isAllowed(cat,q,mode){
  if(mode==='exam')return window.TakumiExam?.isAllowed(cat,q)===true;
+ if((mode==='mi'||mode==='challenge')&&cfg().strictOnly&&!isConfirmed(cat,q.u))return false;
  const st=status(cat,q.u),t=tier(cat,q.u);
  if(st==='future')return false;
  if(mode==='foundation')return t==='基礎'||(cat==='math'&&['連立方程式','図形の性質と合同','証明'].includes(q.u));
@@ -392,6 +393,10 @@ function drawStudyPlan(cat){
  const intro=document.createElement('p');intro.className='legend';
  intro.textContent='表示中の進度には以前の初期推定が含まれます。「確認済み」と表示されない項目は学校の実際の進度が未確認です。学校で扱った内容を確認してから切り替えてください。シラバスの月は予定であり、現在の授業進度を自動判定しません。';
  root.appendChild(intro);
+ const strict=document.createElement('button');strict.className='secondary';strict.style.width='100%';strict.style.marginBottom='9px';
+ strict.textContent='MI・発展モード：確認済み単元のみ出題 '+(cfg().strictOnly?'ON':'OFF');
+ strict.onclick=()=>{const c=cfg();c.strictOnly=!c.strictOnly;c.strictUpdatedAt=Date.now();c.updatedAt=c.strictUpdatedAt;save();drawStudyPlan(cat);drawCards();};
+ root.appendChild(strict);
  const summary=document.createElement('div');summary.className='plan-confirm-summary';
  summary.textContent='実際の進度を確認済み：'+confirmedCount(cat)+'／'+(topicPlan[cat]?.length||0)+'単元';root.appendChild(summary);
  const verify=document.createElement('button');verify.className='secondary';verify.textContent='✅ この教科の進度をすべて確認済みにする';verify.onclick=()=>confirmSubject(cat);root.appendChild(verify);
