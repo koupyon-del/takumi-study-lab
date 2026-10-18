@@ -82,11 +82,12 @@ function mergeStudyData(local,remote){
    const lk=lc.units||{},rk=rc.units||{},lt=lc.unitUpdatedAt||{},rt=rc.unitUpdatedAt||{};
    for(const k of new Set([...Object.keys(lk),...Object.keys(rk)])){
      const hasL=Object.prototype.hasOwnProperty.call(lk,k),hasR=Object.prototype.hasOwnProperty.call(rk,k);
-     const tl=hasL?(Number(lt[k])||leftTs):-1;
-     const tr=hasR?(Number(rt[k])||rightTs):-1;
+     const leftUpdated=Number(lt[k])||0,rightUpdated=Number(rt[k])||0;
+     const tl=hasL?(leftUpdated||(rightUpdated?1:leftTs)):-1;
+     const tr=hasR?(rightUpdated||(leftUpdated?1:rightTs)):-1;
      const localWins=tl>tr||(tl===tr&&String(lk[k])>String(rk[k]));
      merged.units[k]=localWins?lk[k]:rk[k];
-     merged.unitUpdatedAt[k]=Math.max(Number(lt[k])||0,Number(rt[k])||0);
+     merged.unitUpdatedAt[k]=Math.max(tl,tr,0);
    }
    const lcChecks=lc.confirmedUnits||{},rcChecks=rc.confirmedUnits||{};
    for(const k of new Set([...Object.keys(lcChecks),...Object.keys(rcChecks)])){
