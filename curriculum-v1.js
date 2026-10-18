@@ -292,6 +292,7 @@ function isAllowed(cat,q,mode){
 }
 function chooseSet(cat,n=10,mode=cfg().mode){
  const pool=(data[cat]||[]).filter(q=>isAllowed(cat,q,mode));
+ if(window.TakumiQuality)return window.TakumiQuality.select(cat,n,pool,mode);
  if(!pool.length)return [];
  const ranked=pool.map(q=>({q,score:priorityForCurriculum(q,rec(q.id),cat,mode)})).sort((a,b)=>b.score-a.score);
  const out=[],usedQuestions=new Set(),usedUnits=new Set();
@@ -340,7 +341,7 @@ function drawMode(){
   const on=b.dataset.studyMode===cfg().mode;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');
  });
 }
-function countEligible(cat){return (data[cat]||[]).filter(q=>isAllowed(cat,q,cfg().mode)).length}
+function countEligible(cat){const pool=(data[cat]||[]).filter(q=>isAllowed(cat,q,cfg().mode));return window.TakumiQuality?.uniqueCount?.(cat,pool)??pool.length}
 function drawCards(){
  cards.innerHTML='';
  const icons={math:'➗',english:'🔤',japanese:'📖',science:'🔬',history:'🏯',geography:'🌍',waka:'🎴'};
@@ -355,7 +356,7 @@ function drawCards(){
 }
 function topicStats(cat,u){
  const arr=(data[cat]||[]).filter(x=>x.u===u);let attempts=0,correct=0,weak=0;
- for(const q of arr){const r=rec(q.id);attempts+=r.seen;correct+=r.correct;weak+=r.wrong;}
+ for(const q of arr){const v=window.TakumiTrust?.score?.(q.id);if(v){attempts+=v.self;correct+=v.good;weak+=v.wrong;}else{const r=rec(q.id);attempts+=r.seen;correct+=r.correct;weak+=r.wrong;}}
  return {questions:arr.length,attempts,correct,weak,grade:paperGrade(cat,u)};
 }
 function openStudyPlan(cat='math'){
