@@ -283,6 +283,7 @@ function status(cat,u){
 }
 function tier(cat,u){return topicPlan[cat]?.find(t=>t[0]===u)?.[1]||'授業'}
 function isAllowed(cat,q,mode){
+ if(mode==='exam')return window.TakumiExam?.isAllowed(cat,q)===true;
  const st=status(cat,q.u),t=tier(cat,q.u);
  if(st==='future')return false;
  if(mode==='foundation')return t==='基礎'||(cat==='math'&&['連立方程式','図形の性質と合同','証明'].includes(q.u));
@@ -325,6 +326,7 @@ function priorityForCurriculum(q,r,cat,mode){
 selectSet=function(cat,n=10){return chooseSet(cat,n)};
 const oldStart=start;
 start=function(cat){
+ if(cfg().mode==='exam'){window.TakumiExam?.startExam(cat);return}
  if(!chooseSet(cat,1).length){alert('現在の進度設定では出題できる問題がありません。「MI進度・単元設定」を確認してください。');return;}
  oldStart(cat);
 };
@@ -345,7 +347,7 @@ function drawCards(){
   const eligible=countEligible(cat),b=document.createElement('button');
   b.className='card';b.disabled=!eligible;
   b.onclick=()=>start(cat);
-  b.innerHTML='<b>'+icons[cat]+' '+labels[cat]+'</b><span>'+desc[cat]+'<br>現在のモードで '+eligible+'問／10問ずつ</span>';
+  b.innerHTML='<b>'+icons[cat]+' '+labels[cat]+'</b><span>'+desc[cat]+'<br>現在のモードで '+eligible+'問／'+(cfg().mode==='exam'?(window.TakumiExam?.count()||20):10)+'問ずつ</span>';
   cards.appendChild(b);
  }
 }
@@ -420,7 +422,7 @@ nextQ=function(){
 };
 const oldBuildReport=buildReport;
 buildReport=function(){
- const prefix='【MI年間シラバス対応 v1.0】\n現在の学習モード：'+({foundation:'基礎リカバリー',mi:'MI授業復習',challenge:'応用確認'}[cfg().mode])+'\n';
+ const prefix='【MI年間シラバス対応 v1.2】\n現在の学習モード：'+({foundation:'基礎リカバリー',mi:'MI授業復習',challenge:'応用確認',exam:'定期考査対策'}[cfg().mode])+'\n'+(cfg().mode==='exam'?(window.TakumiExam?.report()||''):'');
  return prefix+oldBuildReport()+'\n【授業進度の設定】\n'+Object.entries(topicPlan).map(([cat,ts])=>labels[cat]+'：'+ts.filter(x=>status(cat,x[0])!=='future').map(x=>x[0]+'['+(status(cat,x[0])==='now'?'授業中':'既習')+']').join('、')).join('\n');
 };
 /* Paper subject tabs must include geography. */
@@ -445,5 +447,6 @@ document.head.appendChild(style);
 window.setStudyMode=setStudyMode;
 window.openStudyPlan=openStudyPlan;
 window.launchFoundationCheck=launchFoundationCheck;
+window.TakumiCurriculum={drawCards,drawMode};
 drawMode();drawCards();drawStudyPlan('math');
 })();
