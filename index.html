@@ -54,7 +54,7 @@ function renderProgressOverview(){
  }
  root.appendChild(stats);
  const note=document.createElement('p');note.className='legend';
- note.textContent='上の数字は学習履歴であり、学力の評価ではありません。以前の回答は信頼性が未確認のため、現在の実力判定から除外しています。';
+ note.textContent='上の数字はStudyLabの回答履歴です。紙教材・学校の考査は別管理です。以前の回答は信頼性が未確認のため、現在の実力判定から除外しています。';
  root.appendChild(note);
  const heading=document.createElement('b');heading.textContent='教科別の記録';root.appendChild(heading);
  for(const item of totals){
@@ -71,7 +71,7 @@ function renderProgressOverview(){
   root.appendChild(empty);
  }
 }
-function openProgress(cat='math'){state.cat=cat;show('progress');progressTabs.innerHTML='';Object.keys(data).forEach(c=>{let b=document.createElement('button');b.className='tab '+(c===cat?'on':'');b.textContent=labels[c];b.onclick=()=>openProgress(c);progressTabs.appendChild(b)});renderProgressOverview();let s=subjectStat(cat);let units=[...new Set(data[cat].map(q=>q.u))];progressSummary.innerHTML='<div class="stats"><div class="stat"><b>'+s.seen+'/'+s.total+'</b><div class="small">出題済み</div></div><div class="stat"><b>'+(s.attempts?Math.round(s.rate*100)+'%':'—')+'</b><div class="small">正答率</div></div><div class="stat"><b>'+s.mastered+'</b><div class="small">定着</div></div></div><div class="row"><b>単元</b><b>出題</b><b>正答率</b><b>要再出題</b></div>'+units.map(u=>{let x=unitStat(cat,u);return '<div class="row"><span>'+u+'</span><span>'+x.seen+'/'+x.total+'</span><span>'+(x.attempts?Math.round(x.rate*100)+'%':'—')+'</span><span>'+(x.again+x.maybe)+'</span></div>'}).join('')+(s.attempts?'':'<p class="legend">この教科の回答履歴はまだありません。ほかの教科タブ、または上の全教科記録も確認してください。</p>')}
+function openProgress(cat='math'){state.cat=cat;show('progress');progressTabs.innerHTML='';Object.keys(data).forEach(c=>{let b=document.createElement('button');b.className='tab '+(c===cat?'on':'');b.textContent=labels[c];b.onclick=()=>openProgress(c);progressTabs.appendChild(b)});renderProgressOverview();let s=subjectStat(cat);let units=[...new Set(data[cat].map(q=>q.u))];progressSummary.innerHTML='<div class="stats"><div class="stat"><b>'+s.seen+'/'+s.total+'</b><div class="small">出題済み</div></div><div class="stat"><b>'+(s.attempts?Math.round(s.rate*100)+'%':'—')+'</b><div class="small">過去の正答率（参考）</div></div><div class="stat"><b>'+s.mastered+'</b><div class="small">確認済み定着</div></div></div><div class="row"><b>単元</b><b>出題</b><b>過去正答率</b><b>要再出題</b></div>'+units.map(u=>{let x=unitStat(cat,u);return '<div class="row"><span>'+u+'</span><span>'+x.seen+'/'+x.total+'</span><span>'+(x.attempts?Math.round(x.rate*100)+'%':'—')+'</span><span>'+(x.again+x.maybe)+'</span></div>'}).join('')+(s.attempts?'':'<p class="legend">この教科の回答履歴はまだありません。ほかの教科タブ、または上の全教科記録も確認してください。</p>')}
 function paperCats(){return ['math','japanese','history','science','english','waka']}
 function openPaper(cat='history'){state.cat=cat;show('paper');paperTabs.innerHTML='';paperCats().forEach(c=>{let b=document.createElement('button');b.className='tab '+(c===cat?'on':'');b.textContent=labels[c];b.onclick=()=>openPaper(c);paperTabs.appendChild(b)});renderPaper()}
 function renderPaper(){let cat=state.cat,units=[...new Set(data[cat].map(q=>q.u))];paperBody.innerHTML=units.map(u=>{let g=paperGrade(cat,u);return `<div class="paperRow"><b>${u}</b><div class="tri"><button class="${g==='good'?'on':''}" onclick="setPaper('${cat}','${u}','good')">○ 定着</button><button class="${g==='maybe'?'on':''}" onclick="setPaper('${cat}','${u}','maybe')">△ あやしい</button><button class="${g==='weak'?'on':''}" onclick="setPaper('${cat}','${u}','weak')">× 要復習</button></div></div>`}).join('')}
