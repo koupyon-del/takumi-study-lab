@@ -30,7 +30,7 @@ function isAllowed(cat,q){
 function candidates(cat){return (data[cat]||[]).filter(q=>isAllowed(cat,q))}
 function count(){return Number(settings().count)||20}
 function changed(){
- db.curriculum.updatedAt=Date.now();save();
+ db.curriculum.examUpdatedAt=Date.now();db.curriculum.updatedAt=db.curriculum.examUpdatedAt;save();
  window.TakumiCurriculum?.drawCards();
 }
 function make(tag,content,cls){
@@ -166,7 +166,7 @@ function importExam(e){
    }
    if(!selected)throw Error('有効な単元を見つけられません');
    if(!confirm('現在の定期考査の範囲設定を置き換えます。学習履歴は変更しません。よろしいですか？'))return;
-   settings();db.curriculum.exam=next;db.curriculum.mode='exam';changed();window.TakumiCurriculum?.drawMode();drawScope();
+   settings();db.curriculum.exam=next;db.curriculum.mode='exam';db.curriculum.modeUpdatedAt=Date.now();changed();window.TakumiCurriculum?.drawMode();drawScope();
    alert('考査の範囲を設定しました（'+selected+'単元）');
   }catch(error){alert('読み込み失敗：'+String(error.message||error))}
   finally{input.value=''}
