@@ -76,15 +76,16 @@ function mergeStudyData(local,remote){
     would silently drop IDs practiced solely on the other device. Do not add
     counters together because both phones may already share the same events. */
  const qUnion={};
- for(const id of new Set([...Object.keys(local.q||{}),...Object.keys(remote.q||{})])){
+ for(const id of [...new Set([...Object.keys(local.q||{}),...Object.keys(remote.q||{})])].sort()){ 
    const a=local.q[id],b=remote.q[id];
    if(!a||!b){qUnion[id]=JSON.parse(JSON.stringify(a||b));continue}
    const as=Number(a.seen)||0,bs=Number(b.seen)||0;
-   const preferA=as>bs||(as===bs&&(Number(a.last)||0)>=(Number(b.last)||0));
+   const at=Number(a.last)||0,bt=Number(b.last)||0;
+   const preferA=as>bs||(as===bs&&(at>bt||(at===bt&&JSON.stringify(a)>=JSON.stringify(b))));
    const kept=preferA?a:b,other=preferA?b:a;
    qUnion[id]={...other,...kept};
    if(Array.isArray(a.sessions)||Array.isArray(b.sessions)){
-     qUnion[id].sessions=[...new Set([...(Array.isArray(a.sessions)?a.sessions:[]),...(Array.isArray(b.sessions)?b.sessions:[])])];
+     qUnion[id].sessions=[...new Set([...(Array.isArray(a.sessions)?a.sessions:[]),...(Array.isArray(b.sessions)?b.sessions:[])])].sort((x,y)=>String(x).localeCompare(String(y),'ja',{numeric:true}));
    }
    qUnion[id].last=Math.max(Number(a.last)||0,Number(b.last)||0);
  }
