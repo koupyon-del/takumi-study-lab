@@ -268,7 +268,7 @@ for(const [u,q,c] of [
 ])add('history',u,q,c,'時代と人物・出来事のつながりを確かめます。');
 /* Register new questions preserving IDs, previous records, and existing bank objects. */
 data.geography=data.geography||[];
-labels.geography='地理';desc.geography='地図・時差・世界の地域';
+labels.geography='地理';desc.geography='地図・気候・アジアから南北アメリカまで／進度別';
 labels.history='歴史';
 for(const [cat,arr] of Object.entries(newBank))data[cat].push(...arr);
 function cfg(){
