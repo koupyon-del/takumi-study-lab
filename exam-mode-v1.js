@@ -177,6 +177,7 @@ function importExam(e){
 function selectQuestions(cat,n){
  const pool=candidates(cat);
  const rank=q=>{
+  if(window.TakumiTrust)return window.TakumiTrust.priority(q,cat,'exam');
   const r=rec(q.id);
   let p=q.star*14+(!r.seen?35:Math.max(0,22-r.correct*4)+(r.wrong||0)*14);
   if(r.confidence==='again')p+=42;else if(r.confidence==='maybe')p+=22;else if(r.confidence==='sure')p-=8;
