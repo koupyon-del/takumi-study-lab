@@ -11,7 +11,7 @@ const topicPlan={
  english:[
  ['be動詞','基礎','learned'],['一般動詞','基礎','learned'],['疑問文・否定文','基礎','learned'],
  ['三単現','基礎','learned'],['代名詞','基礎','learned'],['前置詞・時刻','基礎','learned'],
- ['現在進行形','授業','now'],['過去形','授業','future'],
+ ['現在進行形','授業','now'],['英文読解','授業','now'],['過去形','授業','future'],
  ['未来表現','授業','future'],['比較','授業','future'],['語彙・現在完了','発展','future'],['並べ替え','発展','future']],
  japanese:[
  ['語彙・知識','基礎','learned'],['文法','授業','now'],['読解の基本','基礎','learned'],
@@ -267,7 +267,7 @@ for(const [u,q,c] of [
  ['室町時代','室町幕府を開いた人物は？',['足利尊氏','源頼朝','徳川家康','藤原道長']]
 ])add('history',u,q,c,'時代と人物・出来事のつながりを確かめます。');
 /* Register new questions preserving IDs, previous records, and existing bank objects. */
-data.geography=[];
+data.geography=data.geography||[];
 labels.geography='地理';desc.geography='地図・時差・世界の地域';
 labels.history='歴史';
 for(const [cat,arr] of Object.entries(newBank))data[cat].push(...arr);
