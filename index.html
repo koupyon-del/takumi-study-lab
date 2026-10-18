@@ -116,6 +116,7 @@ async function applyCloudRecord(row){
  db=latestLocal;
  localStorage.setItem('takumiLab08',JSON.stringify(db));
  updateStats();
+ window.TakumiExam?.refresh?.();
  cloudReady=true;
  if(JSON.stringify(latestLocal)!==JSON.stringify(serverMerged))cloudPending=true;
 }
