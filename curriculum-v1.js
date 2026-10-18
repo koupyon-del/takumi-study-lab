@@ -311,6 +311,8 @@ function chooseSet(cat,n=10,mode=cfg().mode){
  return out;
 }
 function priorityForCurriculum(q,r,cat,mode){
+ const trusted=window.TakumiTrust;
+ if(trusted)return trusted.priority(q,cat,mode);
  let p=q.star*12 + (!r.seen?35:Math.max(0,22-r.correct*4)+r.wrong*15);
  if(r.confidence==='maybe')p+=20;
  if(r.confidence==='again')p+=43;
