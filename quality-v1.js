@@ -101,6 +101,8 @@ function score(q,group,ev,mode){
  if(mode==='foundation'){p+=q.star===1?22:q.star===2?12:-18}
  if(mode==='challenge'){p+=q.star>=3?26:-14}
  if(mode==='exam')p+=q.star>=2?7:0;
+ if(mode==='mi'&&window.TakumiCurriculum?.status?.(group.cat,q.u)==='now')p+=18;
+ if(mode==='challenge'&&window.TakumiCurriculum?.status?.(group.cat,q.u)==='now')p+=12;
  return p+Math.random()*7;
 }
 function select(cat,n,raw,mode){
@@ -152,13 +154,17 @@ buildReport=function(){
  const a=audit(),ev=evidence();
  let result=oldReport();
  result+='\n【v1.5 出題品質と優先順位】\n登録 '+a.total+'問／重複を除く独立問題文 '+a.distinct+'件／重複抑制 '+a.duplicates+'件／矛盾回答候補 '+a.conflicts+'件\n';
+ result+='※ 実際の授業進度は学校の資料・本人の確認が必要。進度確認が未完了の単元は初期推定です。\\n';
  for(const [cat,units] of Object.entries(a.units)){
   const focus=Object.entries(units).map(([u,count])=>({u,count,need:unitNeed(cat,u,ev)})).sort((x,y)=>y.need-x.need).slice(0,4);
-  result+=(labels[cat]||cat)+'：重点 '+focus.map(x=>x.u+'('+Math.round(x.need)+')').join('、')+'\n';
+  const progress=window.TakumiCurriculum?.confirmedCount?.(cat);
+  const verified=progress===undefined?'確認状況未取得':'進度確認'+progress+'/'+Object.keys(units).length;
+  result+=(labels[cat]||cat)+'：'+verified+'／重点 '+focus.map(x=>x.u+'('+Math.round(x.need)+')').join('、')+'\n';
  }
  return result;
 };
 window.TakumiQuality={select,uniqueCount,audit,refresh:rebuild,priorityForUnit:unitNeed};
+window.TakumiCurriculum?.refresh?.();
 /* Visible audit: read-only diagnostics; does not mutate historic progress. */
 const panel=document.querySelector('.study-panel');
 if(panel&&document.querySelector('.wrap')){
