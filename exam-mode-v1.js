@@ -176,6 +176,7 @@ function importExam(e){
 }
 function selectQuestions(cat,n){
  const pool=candidates(cat);
+ if(window.TakumiQuality)return window.TakumiQuality.select(cat,n,pool,'exam');
  const rank=q=>{
   if(window.TakumiTrust)return window.TakumiTrust.priority(q,cat,'exam');
   const r=rec(q.id);
