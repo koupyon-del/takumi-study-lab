@@ -153,8 +153,8 @@ const oldReport=buildReport;
 buildReport=function(){
  const a=audit(),ev=evidence();
  let result=oldReport();
- result+='\n【v1.5 出題品質と優先順位】\n登録 '+a.total+'問／重複を除く独立問題文 '+a.distinct+'件／重複抑制 '+a.duplicates+'件／矛盾回答候補 '+a.conflicts+'件\n';
- result+='※ 実際の授業進度は学校の資料・本人の確認が必要。進度確認が未完了の単元は初期推定です。\\n';
+ result+='\n【v1.6 出題品質と優先順位】\n登録 '+a.total+'問／重複を除く独立問題文 '+a.distinct+'件／重複抑制 '+a.duplicates+'件／矛盾回答候補 '+a.conflicts+'件\n';
+ result+='※ 実際の授業進度は学校の資料・本人の確認が必要。進度確認が未完了の単元は初期推定です。\n';
  for(const [cat,units] of Object.entries(a.units)){
   const focus=Object.entries(units).map(([u,count])=>({u,count,need:unitNeed(cat,u,ev)})).sort((x,y)=>y.need-x.need).slice(0,4);
   const progress=window.TakumiCurriculum?.confirmedCount?.(cat);
