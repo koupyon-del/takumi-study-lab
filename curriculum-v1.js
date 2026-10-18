@@ -275,6 +275,7 @@ function cfg(){
  if(!db.curriculum||typeof db.curriculum!=='object')db.curriculum={};
  if(!db.curriculum.units||typeof db.curriculum.units!=='object')db.curriculum.units={};
  if(!db.curriculum.confirmedUnits||typeof db.curriculum.confirmedUnits!=='object')db.curriculum.confirmedUnits={};
+ if(!db.curriculum.unitUpdatedAt||typeof db.curriculum.unitUpdatedAt!=='object')db.curriculum.unitUpdatedAt={};
  if(!db.curriculum.mode)db.curriculum.mode='mi';
  if(!Number(db.curriculum.updatedAt))db.curriculum.updatedAt=0;
  return db.curriculum;
@@ -345,7 +346,7 @@ start=function(cat){
  oldStart(cat);
 };
 function setStudyMode(m){
- const c=cfg();c.mode=m;c.updatedAt=Date.now();save();drawMode();drawCards();
+ const c=cfg();c.mode=m;c.modeUpdatedAt=Date.now();c.updatedAt=c.modeUpdatedAt;save();drawMode();drawCards();
 }
 function drawMode(){
  document.querySelectorAll('[data-study-mode]').forEach(b=>{
@@ -411,7 +412,7 @@ function drawStudyPlan(cat){
   const seg=document.createElement('div');seg.className='plan-seg';
   for(const [v,txt] of [['future','未習'],['now','授業中'],['learned','既習']]){
    const b=document.createElement('button');b.textContent=txt;b.className=st===v?'selected':'';
-   b.onclick=()=>{const c=cfg(),at=Date.now();c.units[cat+'|'+u]=v;c.confirmedUnits[cat+'|'+u]=at;c.updatedAt=at;save();drawStudyPlan(cat);drawCards();};
+   b.onclick=()=>{const c=cfg(),at=Date.now();c.units[cat+'|'+u]=v;c.unitUpdatedAt[cat+'|'+u]=at;c.confirmedUnits[cat+'|'+u]=at;c.updatedAt=at;save();drawStudyPlan(cat);drawCards();};
    seg.appendChild(b);
   }
   item.appendChild(seg);
