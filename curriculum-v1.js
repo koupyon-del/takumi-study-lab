@@ -456,7 +456,7 @@ nextQ=function(){
  if(last&&studyCheck){
   const notes=studyCheck.answers.filter(x=>!x.ok).map(x=>x.u);
   const p=document.createElement('p');p.className='legend';
-  p.textContent=notes.length?'簡易診断で要確認：'+[...new Set(notes)].join('、')+'。4択の結果だけでは計算力を断定できません。紙の問題で解き直しましょう。':'簡易診断では全問正解です。分数や方程式は紙に途中式を書いて再確認してください。';
+  p.textContent=notes.length?'週次診断で要確認：'+[...new Set(notes)].join('、')+'。4択の結果だけでは計算力を断定できません。紙の問題で解き直しましょう。':'週次診断では全問正解です。分数や方程式は紙に途中式を書いて再確認してください。';
   resultText.appendChild(p);studyCheck=null;
  }
 };
@@ -475,7 +475,7 @@ panel.innerHTML='<b>学習コースを選択</b><div class="mode-options">'+
  '<button data-study-mode="mi" onclick="setStudyMode(\'mi\')">📚 MI授業復習</button>'+
  '<button data-study-mode="challenge" onclick="setStudyMode(\'challenge\')">🎯 応用確認</button></div>'+
  '<p class="legend">基礎は既習範囲の穴埋め。MIは授業中・既習の範囲。応用確認も未習単元は出しません。4択だけで計算力や記述力の定着は判断できないため、紙教材と併用します。</p>'+
- '<div class="actions"><button class="secondary" onclick="launchFoundationCheck()">🔎 数学基礎チェック（9問）</button><button class="secondary" onclick="openStudyPlan()">📅 MI進度・単元設定</button></div>';
+ '<div class="actions" style="display:block"><button class="secondary" style="width:100%" onclick="openStudyPlan()">📅 MI進度・単元設定</button></div>';
 document.getElementById('home').querySelector('.hero').after(panel);
 for(const cat of ['math','english','japanese','science','history','geography','waka']){
  const b=document.createElement('button');b.className='tab';b.dataset.planSubj=cat;b.textContent=labels[cat];
