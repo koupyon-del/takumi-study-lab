@@ -93,16 +93,18 @@ function mergeStudyData(local,remote){
    for(const k of new Set([...Object.keys(lcChecks),...Object.keys(rcChecks)])){
      merged.confirmedUnits[k]=Math.max(Number(lcChecks[k])||0,Number(rcChecks[k])||0);
    }
-   const lModeAt=Number(lc.modeUpdatedAt)||(!lc.mode?0:leftTs);
-   const rModeAt=Number(rc.modeUpdatedAt)||(!rc.mode?0:rightTs);
+   const lm=Number(lc.modeUpdatedAt)||0,rm=Number(rc.modeUpdatedAt)||0;
+   const lModeAt=lm||(lc.mode?(rm?1:leftTs):0);
+   const rModeAt=rm||(rc.mode?(lm?1:rightTs):0);
    const modeWins=lModeAt>rModeAt||(lModeAt===rModeAt&&String(lc.mode||'')>String(rc.mode||''));
    merged.mode=(modeWins?lc.mode:rc.mode)||'mi';
-   merged.modeUpdatedAt=Math.max(Number(lc.modeUpdatedAt)||0,Number(rc.modeUpdatedAt)||0);
-   const lExamAt=Number(lc.examUpdatedAt)||(!lc.exam?0:leftTs);
-   const rExamAt=Number(rc.examUpdatedAt)||(!rc.exam?0:rightTs);
+   merged.modeUpdatedAt=Math.max(lModeAt,rModeAt,0);
+   const le=Number(lc.examUpdatedAt)||0,re=Number(rc.examUpdatedAt)||0;
+   const lExamAt=le||(lc.exam?(re?1:leftTs):0);
+   const rExamAt=re||(rc.exam?(le?1:rightTs):0);
    const examWins=lExamAt>rExamAt||(lExamAt===rExamAt&&JSON.stringify(lc.exam||{})>JSON.stringify(rc.exam||{}));
    if(lc.exam||rc.exam)merged.exam=JSON.parse(JSON.stringify((examWins?lc.exam:rc.exam)||{}));
-   merged.examUpdatedAt=Math.max(Number(lc.examUpdatedAt)||0,Number(rc.examUpdatedAt)||0);
+   merged.examUpdatedAt=Math.max(lExamAt,rExamAt,0);
    merged.updatedAt=Math.max(leftTs,rightTs,merged.modeUpdatedAt,merged.examUpdatedAt);
    result.curriculum=merged;
  }
