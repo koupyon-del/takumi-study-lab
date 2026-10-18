@@ -75,6 +75,21 @@ function stateOf(q,group,ev){
  }
  return {events,self,last,lastSelf,good,failures,gap,due};
 }
+/* Use only verified school exam answers; never count them as repeat mastery.
+   A newer parent-verified paper assessment supersedes an older exam grade. */
+function latestExamGrade(cat,u){
+ const all=db.examRecords&&typeof db.examRecords==='object'?Object.values(db.examRecords):[];
+ let best=null;
+ for(const r of all){
+  if(!r||r.deleted||r.verified!==true||r.cat!==cat||!Array.isArray(r.units))continue;
+  if(typeof r.date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(r.date))continue;
+  const item=r.units.find(x=>x&&x.unit===u&&['good','maybe','weak'].includes(x.grade));
+  if(!item)continue;
+  const value={grade:item.grade,date:r.date,updatedAt:Number(r.updatedAt)||0};
+  if(!best||value.date>best.date||(value.date===best.date&&value.updatedAt>best.updatedAt))best=value;
+ }
+ return best;
+}
 function unitNeed(cat,u,ev){
  const g=grade(cat,u);
  const all=(ev.byUnit[cat+'|'+u]||[]).filter(x=>x.help==='self').slice(-10);
@@ -83,6 +98,11 @@ function unitNeed(cat,u,ev){
  if(all.length)score+=40*(misses/all.length);
  else if(g!=='good')score+=14;
  if(all.length>=5&&misses===0)score-=12;
+ const test=latestExamGrade(cat,u);
+ const paper=trust()?.store?.()?.paper?.[cat]?.[u];
+ if(test&&(!paper?.sourceDate||test.date>=String(paper.sourceDate))){
+  score+=test.grade==='weak'?62:test.grade==='maybe'?26:-9;
+ }
  return score;
 }
 function score(q,group,ev,mode){
@@ -204,7 +224,8 @@ function openQualityAudit(cat='math'){
   const l=document.createElement('span');l.textContent=x.u+'（独立 '+x.count+'問）';
   const r=document.createElement('span');
   const mark={good:'○',maybe:'△',weak:'×'}[x.grade]||'未評価';
-  r.textContent='紙'+mark+' ／ 優先 '+Math.round(x.need);row.append(l,r);card.appendChild(row);
+  const exam=latestExamGrade(cat,x.u);const examTag=exam?' ／ 考査'+({good:'○',maybe:'△',weak:'×'}[exam.grade]||'') : '';
+  r.textContent='紙'+mark+examTag+' ／ 優先 '+Math.round(x.need);row.append(l,r);card.appendChild(row);
  }
  root.appendChild(card);show('qualityAudit');
 }
