@@ -132,6 +132,67 @@ importPaper=function(ev){
 const oldOpenPaper=openPaper;
 openPaper=function(cat){oldOpenPaper(cat);const info=document.getElementById('trust-paper-info');if(info)info.textContent='過去の紙評価は参考記録として保存されています。この画面の○△×は、保護者が確認して登録したものだけです。10/17・10/18の結果はJSONを再取り込みするか、答案を見ながら再評価してください。'};
 
+
+function statFor(cat,unit){
+ const qs=(data[cat]||[]).filter(q=>unit===undefined||q.u===unit);
+ let seen=0,correct=0,attempts=0,mas=0,again=0,maybe=0;
+ for(const q of qs){
+  const x=score(q.id);if(x.seen)seen++;
+  correct+=x.correct;attempts+=x.seen;
+  if(confirmed(rec(q.id)))mas++;
+  if(x.lastConfidence==='again')again++;
+  if(x.lastConfidence==='maybe')maybe++;
+ }
+ return {total:qs.length,seen,correct,attempts,mastered:mas,again,maybe,rate:attempts?correct/attempts:0};
+}
+subjectStat=function(cat){return statFor(cat)};
+unitStat=function(cat,u){return statFor(cat,u)};
+function evidenceCount(){return Object.values(store().paper).reduce((n,p)=>n+Object.keys(p||{}).length,0)}
+function summary(){
+ const a=values(),self=a.filter(e=>e.help==='self');
+ return '新しい回答：'+a.length+'件（自力申告 '+self.length+'件）／保護者確認済み紙課題：'+evidenceCount()+'単元。これまでの回答 '+db.played+'件は履歴として保存中。';
+}
+updateStats=function(){
+ const a=values().filter(e=>e.help==='self');
+ played.textContent=db.played||0;
+ rate.textContent=a.length?Math.round(a.filter(e=>e.ok).length/a.length*100)+'%':'—';
+ let total=0;for(const qs of Object.values(data))for(const q of qs)if(confirmed(rec(q.id)))total++;
+ mastered.textContent=total;
+ const labelsOnHome=document.getElementById('home')?.querySelectorAll('.stat .small');
+ if(labelsOnHome?.length===3){
+  labelsOnHome[0].textContent='回答履歴（過去分含む）';
+  labelsOnHome[1].textContent='自力正答率（本人申告）';
+  labelsOnHome[2].textContent='確認済み定着問題';
+ }
+ const s=document.getElementById('trust-status');if(s)s.textContent=summary();
+};
+function trustedReport(){
+ const journal=values(),lines=[
+  '【巧澄 Study Lab v1.3 信頼性別学習レポート】',
+  '集計日：'+new Date().toLocaleString('ja-JP'),
+  '注意：以前のアプリ回答は答えを写した可能性があるため、学力評価には含めない。',
+  '回答履歴の累計（参考のみ）：'+db.played,
+  'v1.3以降に解いた回答（本人申告）：'+journal.length,
+  '自力：'+journal.filter(e=>e.help==='self').length+'、ヒント後：'+journal.filter(e=>e.help==='hint').length+'、答えを見た：'+journal.filter(e=>e.help==='copied').length,''
+ ];
+ for(const cat of ['math','english','japanese','science','history','geography','waka']){
+  const subject=journal.filter(e=>e.cat===cat),self=subject.filter(e=>e.help==='self');
+  lines.push('■'+labels[cat]+'：新規回答'+subject.length+'／自力申告'+self.length+'／自力正答率'+(self.length?Math.round(self.filter(e=>e.ok).length/self.length*100)+'%':'未測定'));
+  for(const u of new Set((data[cat]||[]).map(q=>q.u))){
+   const a=subject.filter(e=>e.unit===u),ok=a.filter(e=>e.help==='self'),paper=store().paper[cat]?.[u];
+   if(!a.length&&!paper)continue;
+   const grades={good:'○',maybe:'△',weak:'×'};
+   lines.push('・'+u+'：自力申告'+ok.length+'件（正答'+ok.filter(e=>e.ok).length+'件）、ヒント後'+a.filter(e=>e.help==='hint').length+'件、答え見た'+a.filter(e=>e.help==='copied').length+'件、確認済み紙'+(grades[paper?.grade]||'—')+(paper?' ['+paper.sourceDate+']':''));
+  }
+  lines.push('');
+ }
+ lines.push('【判定ルール】本人申告の正解は暫定。保護者確認済み紙課題を優先。過去のアプリ正答率は信用しない。');
+ return lines.join('\n');
+}
+buildReport=trustedReport;
+function refresh(){cacheRef=null;updateStats();window.TakumiCurriculum?.drawCards?.()}
+
 /* EXTENSION_POINT */
-window.TakumiTrust={store,grade,score,priority,confirmed};
+window.TakumiTrust={store,grade,score,priority,confirmed,refresh,summary,report:trustedReport};
+refresh();
 })();
