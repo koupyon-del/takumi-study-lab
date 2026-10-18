@@ -34,7 +34,7 @@ const topicPlan={
  ['世界の気候','授業','now'],['世界の生活・文化','授業','now'],
  ['アジア','授業','future'],['ヨーロッパ','授業','future'],['アフリカ','授業','future'],
  ['南北アメリカ','授業','future'],['オセアニア','授業','future']],
- waka:[['40〜44番','授業','learned'],['45〜49番','授業','learned'],['50〜54番','授業','now'],['55〜59番','授業','now'],['60〜60番','授業','now']]
+ waka:[['1〜20番','授業','learned'],['21〜39番','授業','learned'],['40〜44番','授業','learned'],['45〜49番','授業','learned'],['50〜54番','授業','now'],['55〜59番','授業','now'],['60〜60番','授業','now'],['61〜80番','授業','future'],['81〜100番','授業','future']]
 };
 const newBank={math:[],english:[],japanese:[],science:[],history:[],geography:[]};
 const counters={math:0,english:0,japanese:0,science:0,history:0,geography:0};
