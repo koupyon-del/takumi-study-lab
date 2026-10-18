@@ -274,12 +274,23 @@ for(const [cat,arr] of Object.entries(newBank))data[cat].push(...arr);
 function cfg(){
  if(!db.curriculum||typeof db.curriculum!=='object')db.curriculum={};
  if(!db.curriculum.units||typeof db.curriculum.units!=='object')db.curriculum.units={};
+ if(!db.curriculum.confirmedUnits||typeof db.curriculum.confirmedUnits!=='object')db.curriculum.confirmedUnits={};
  if(!db.curriculum.mode)db.curriculum.mode='mi';
  if(!Number(db.curriculum.updatedAt))db.curriculum.updatedAt=0;
  return db.curriculum;
 }
 function status(cat,u){
  return cfg().units[cat+'|'+u]||topicPlan[cat]?.find(t=>t[0]===u)?.[2]||'future';
+}
+function isConfirmed(cat,u){return Boolean(cfg().confirmedUnits[cat+'|'+u])}
+function confirmedCount(cat){return (topicPlan[cat]||[]).filter(([u])=>isConfirmed(cat,u)).length}
+function confirmSubject(cat){
+ const c=cfg(),rows=topicPlan[cat]||[];
+ if(!rows.length)return;
+ if(!confirm('現在の「未習・授業中・既習」をこの教科の全単元について確認しましたか？\\nシラバスの予定だけではなく、実際の授業内容・本人の学習状況を確認してから登録してください。'))return;
+ const t=Date.now();
+ for(const [u] of rows)c.confirmedUnits[cat+'|'+u]=t;
+ c.updatedAt=t;save();drawStudyPlan(cat);drawCards();
 }
 function tier(cat,u){return topicPlan[cat]?.find(t=>t[0]===u)?.[1]||'授業'}
 function isAllowed(cat,q,mode){
@@ -350,7 +361,7 @@ function drawCards(){
   const eligible=countEligible(cat),b=document.createElement('button');
   b.className='card';b.disabled=!eligible;
   b.onclick=()=>start(cat);
-  b.innerHTML='<b>'+icons[cat]+' '+labels[cat]+'</b><span>'+desc[cat]+'<br>現在のモードで '+eligible+'問／'+(cfg().mode==='exam'?(window.TakumiExam?.count()||20):10)+'問ずつ</span>';
+  b.innerHTML='<b>'+icons[cat]+' '+labels[cat]+'</b><span>'+desc[cat]+'<br>現在のモードで '+eligible+'問／'+(cfg().mode==='exam'?(window.TakumiExam?.count()||20):10)+'問ずつ<br>進度確認 '+confirmedCount(cat)+'/'+(topicPlan[cat]?.length||0)+'単元</span>';
   cards.appendChild(b);
  }
 }
@@ -378,8 +389,11 @@ function drawStudyPlan(cat){
  document.querySelectorAll('[data-plan-subj]').forEach(b=>b.classList.toggle('on',b.dataset.planSubj===cat));
  root.innerHTML='';
  const intro=document.createElement('p');intro.className='legend';
- intro.textContent='学校で扱った単元を「授業中」「既習」に変更します。未習の単元は出題されません。シラバスは年間予定のため実際の授業進度に合わせて設定してください。';
+ intro.textContent='表示中の進度には以前の初期推定が含まれます。「確認済み」と表示されない項目は学校の実際の進度が未確認です。学校で扱った内容を確認してから切り替えてください。シラバスの月は予定であり、現在の授業進度を自動判定しません。';
  root.appendChild(intro);
+ const summary=document.createElement('div');summary.className='plan-confirm-summary';
+ summary.textContent='実際の進度を確認済み：'+confirmedCount(cat)+'／'+(topicPlan[cat]?.length||0)+'単元';root.appendChild(summary);
+ const verify=document.createElement('button');verify.className='secondary';verify.textContent='✅ この教科の進度をすべて確認済みにする';verify.onclick=()=>confirmSubject(cat);root.appendChild(verify);
  const tr=document.createElement('div');tr.className='plan-items';
  let lastHeading='';
  const rawPlan=topicPlan[cat]||[];
@@ -392,12 +406,12 @@ function drawStudyPlan(cat){
   item.className='plan-item';
   const top=document.createElement('div');top.className='plan-title';
   const left=document.createElement('b');left.textContent=u;
-  const hint=document.createElement('span');hint.className='small';hint.textContent=t+'／収録'+stats.questions+'問';
+  const hint=document.createElement('span');hint.className='small';hint.textContent=t+'／収録'+stats.questions+'問／'+(isConfirmed(cat,u)?'✅ 確認済み':'⚠ 未確認（仮設定）');
   top.append(left,hint);item.appendChild(top);
   const seg=document.createElement('div');seg.className='plan-seg';
   for(const [v,txt] of [['future','未習'],['now','授業中'],['learned','既習']]){
    const b=document.createElement('button');b.textContent=txt;b.className=st===v?'selected':'';
-   b.onclick=()=>{const c=cfg();c.units[cat+'|'+u]=v;c.updatedAt=Date.now();save();drawStudyPlan(cat);drawCards();};
+   b.onclick=()=>{const c=cfg(),at=Date.now();c.units[cat+'|'+u]=v;c.confirmedUnits[cat+'|'+u]=at;c.updatedAt=at;save();drawStudyPlan(cat);drawCards();};
    seg.appendChild(b);
   }
   item.appendChild(seg);
@@ -414,7 +428,7 @@ function launchFoundationCheck(){
  const taken=[],stateMode=cfg().mode;
  for(const u of focus){
   const qs=data.math.filter(x=>x.u===u);
-  if(qs.length){const picked=qs.sort((a,b)=>(rec(a.id).seen-rec(b.id).seen))[0];taken.push(picked);}
+  if(qs.length){const ev=window.TakumiTrust;const pool=[...qs].sort((a,b)=>{const sa=ev?.score?.(a.id),sb=ev?.score?.(b.id);const aScore=(sa?.self||0)+((sa?.good||0)*0.1),bScore=(sb?.self||0)+((sb?.good||0)*0.1);return aScore-bScore;});taken.push(pool[0]);}
  }
  state.cat='math';state.set=taken;state.i=0;state.score=0;state.locked=false;
  state.session=++db.sessions;db.quizUpdatedAt=Date.now();save();
@@ -462,11 +476,11 @@ for(const cat of ['math','english','japanese','science','history','geography','w
  b.onclick=()=>drawStudyPlan(cat);document.getElementById('plan-tabs').appendChild(b);
 }
 const style=document.createElement('style');
-style.textContent='.study-panel{background:#fff;padding:15px;border-radius:16px;margin:14px 0}.study-panel b{font-size:16px}.mode-options{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:12px}.mode-options button{border:1px solid #ccc;border-radius:12px;padding:12px 3px;background:#f6f6f6;font-size:12px;font-weight:700}.mode-options button.on{background:#171717;color:white}.plan-items{background:#fff;border-radius:15px;padding:10px}.plan-course{font-size:14px;background:#f3f5f7;padding:9px 10px;margin:14px 0 4px;border-radius:8px}.plan-item{padding:12px 5px;border-bottom:1px solid #eee}.plan-title{display:flex;justify-content:space-between;gap:6px;margin-bottom:8px}.plan-title .small{white-space:nowrap}.plan-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:5px}.plan-seg button{background:#fff;border:1px solid #ddd;border-radius:8px;padding:8px 4px;font-size:12px}.plan-seg button.selected{background:#171717;color:#fff}.card:disabled{opacity:.46}';
+style.textContent='.plan-confirm-summary{background:#f7f5ef;border-radius:9px;margin:8px 0;padding:10px;font-size:13px;font-weight:700}.study-panel{background:#fff;padding:15px;border-radius:16px;margin:14px 0}.study-panel b{font-size:16px}.mode-options{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:12px}.mode-options button{border:1px solid #ccc;border-radius:12px;padding:12px 3px;background:#f6f6f6;font-size:12px;font-weight:700}.mode-options button.on{background:#171717;color:white}.plan-items{background:#fff;border-radius:15px;padding:10px}.plan-course{font-size:14px;background:#f3f5f7;padding:9px 10px;margin:14px 0 4px;border-radius:8px}.plan-item{padding:12px 5px;border-bottom:1px solid #eee}.plan-title{display:flex;justify-content:space-between;gap:6px;margin-bottom:8px}.plan-title .small{white-space:nowrap}.plan-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:5px}.plan-seg button{background:#fff;border:1px solid #ddd;border-radius:8px;padding:8px 4px;font-size:12px}.plan-seg button.selected{background:#171717;color:#fff}.card:disabled{opacity:.46}';
 document.head.appendChild(style);
 window.setStudyMode=setStudyMode;
 window.openStudyPlan=openStudyPlan;
 window.launchFoundationCheck=launchFoundationCheck;
-window.TakumiCurriculum={drawCards,drawMode};
+window.TakumiCurriculum={drawCards,drawMode,status,isConfirmed,confirmedCount,confirmSubject,refresh(){drawMode();drawCards();const plan=document.getElementById('studyplan');if(plan?.classList?.contains('active')){const active=document.querySelector('[data-plan-subj].on');drawStudyPlan(active?.dataset?.planSubj||'math');}}};
 drawMode();drawCards();drawStudyPlan('math');
 })();
