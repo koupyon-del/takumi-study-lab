@@ -6,6 +6,7 @@ function store(){
  if(!db.trust||typeof db.trust!=='object')db.trust={schema:1,answers:{},paper:{}};
  db.trust.answers=db.trust.answers||{};
  db.trust.paper=db.trust.paper||{};
+ db.trust.paperEvents=db.trust.paperEvents||{};
  return db.trust;
 }
 function make(tag,value,cls){
@@ -92,10 +93,16 @@ nextQ=function(){
 function markPaper(cat,u,g,sourceDate,source){
  if(!['good','maybe','weak'].includes(g))return;
  const t=store(),now=Date.now();
- (t.paper[cat]||(t.paper[cat]={}))[u]={grade:g,sourceDate,source,verifiedAt:now};
- db.paper[cat]=db.paper[cat]||{};db.paperUpdated=db.paperUpdated||{};
- db.paperUpdated[cat]=db.paperUpdated[cat]||{};
- db.paper[cat][u]=g;db.paperUpdated[cat][u]=now;
+ const id=now+'-P'+(++n)+'-'+Math.random().toString(36).slice(2);
+ const event={id,cat,unit:u,grade:g,sourceDate,source,verifiedAt:now};
+ t.paperEvents={...t.paperEvents,[id]:event};
+ const old=t.paper[cat]?.[u];
+ if(!old||sourceDate>=String(old.sourceDate||'')){
+  (t.paper[cat]||(t.paper[cat]={}))[u]={grade:g,sourceDate,source,verifiedAt:now};
+  db.paper[cat]=db.paper[cat]||{};db.paperUpdated=db.paperUpdated||{};
+  db.paperUpdated[cat]=db.paperUpdated[cat]||{};
+  db.paper[cat][u]=g;db.paperUpdated[cat][u]=now;
+ }
 }
 setPaper=function(cat,u,g){
  if(!confirm('この紙答案を保護者が確認した結果として登録しますか？\n過去の不確かなアプリ正答率は根拠にしないでください。'))return;
@@ -180,9 +187,10 @@ function trustedReport(){
   lines.push('■'+labels[cat]+'：新規回答'+subject.length+'／自力申告'+self.length+'／自力正答率'+(self.length?Math.round(self.filter(e=>e.ok).length/self.length*100)+'%':'未測定'));
   for(const u of new Set((data[cat]||[]).map(q=>q.u))){
    const a=subject.filter(e=>e.unit===u),ok=a.filter(e=>e.help==='self'),paper=store().paper[cat]?.[u];
-   if(!a.length&&!paper)continue;
+   const events=Object.values(store().paperEvents||{}).filter(e=>e.cat===cat&&e.unit===u);
+   if(!a.length&&!paper&&!events.length)continue;
    const grades={good:'○',maybe:'△',weak:'×'};
-   lines.push('・'+u+'：自力申告'+ok.length+'件（正答'+ok.filter(e=>e.ok).length+'件）、ヒント後'+a.filter(e=>e.help==='hint').length+'件、答え見た'+a.filter(e=>e.help==='copied').length+'件、確認済み紙'+(grades[paper?.grade]||'—')+(paper?' ['+paper.sourceDate+']':''));
+   lines.push('・'+u+'：自力申告'+ok.length+'件（正答'+ok.filter(e=>e.ok).length+'件）、ヒント後'+a.filter(e=>e.help==='hint').length+'件、答え見た'+a.filter(e=>e.help==='copied').length+'件、確認済み紙'+(grades[paper?.grade]||'—')+(paper?' ['+paper.sourceDate+']':'')+(events.length?'／紙課題日：'+[...new Set(events.map(e=>e.sourceDate))].sort().join('・'):'') );
   }
   lines.push('');
  }
