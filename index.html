@@ -105,7 +105,12 @@ function mergeStudyData(local,remote){
    const examWins=lExamAt>rExamAt||(lExamAt===rExamAt&&JSON.stringify(lc.exam||{})>JSON.stringify(rc.exam||{}));
    if(lc.exam||rc.exam)merged.exam=JSON.parse(JSON.stringify((examWins?lc.exam:rc.exam)||{}));
    merged.examUpdatedAt=Math.max(lExamAt,rExamAt,0);
-   merged.updatedAt=Math.max(leftTs,rightTs,merged.modeUpdatedAt,merged.examUpdatedAt);
+   const ls=Number(lc.strictUpdatedAt)||0,rs=Number(rc.strictUpdatedAt)||0;
+   const strictLeftAt=ls||(typeof lc.strictOnly==='boolean'?(rs?1:leftTs):0);
+   const strictRightAt=rs||(typeof rc.strictOnly==='boolean'?(ls?1:rightTs):0);
+   merged.strictOnly=strictLeftAt>strictRightAt?Boolean(lc.strictOnly):strictRightAt>strictLeftAt?Boolean(rc.strictOnly):Boolean(lc.strictOnly||rc.strictOnly);
+   merged.strictUpdatedAt=Math.max(strictLeftAt,strictRightAt,0);
+   merged.updatedAt=Math.max(leftTs,rightTs,merged.modeUpdatedAt,merged.examUpdatedAt,merged.strictUpdatedAt);
    result.curriculum=merged;
  }
  result.paper={};result.paperUpdated={};
