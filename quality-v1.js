@@ -4,6 +4,13 @@
 'use strict';
 const normalized=s=>String(s||'').normalize('NFKC').replace(/^【[^】]+】\s*/,'').replace(/[\s　]+/g,'').replace(/[?？!！、，。．・：:「」『』（）()]/g,'').toLowerCase();
 const now=()=>Date.now();
+function equivalentAnswer(a,b){
+ const x=normalized(a).replace(/大陸$/,''),y=normalized(b).replace(/大陸$/,'');
+ if(x===y)return true;
+ if(x.includes('城郭')&&x.includes('障壁画')&&y.includes('城郭')&&y.includes('障壁画'))return true;
+ return false;
+}
+
 let indexByCat={};
 function rebuild(){
  const map={};
@@ -14,7 +21,7 @@ function rebuild(){
    const answer=normalized(q.c[q.a]);
    const g=groups.get(key);
    if(!g)groups.set(key,{ids:[q],answer,unit:q.u});
-   else if(g.answer===answer)g.ids.push(q);
+   else if(equivalentAnswer(g.answer,answer))g.ids.push(q);
    else conflicts.push({cat,unit:q.u,question:q.q,ids:[...g.ids.map(v=>v.id),q.id],reason:'same question, incompatible answer'});
   }
   map[cat]={groups:[...groups.values()],conflicts};
