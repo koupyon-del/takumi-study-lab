@@ -361,6 +361,17 @@ function topicStats(cat,u){
 function openStudyPlan(cat='math'){
  show('studyplan');drawStudyPlan(cat);
 }
+const mathGeom=new Set(['図形の基本','空間図形','図形の性質と合同','証明','三角形・四角形','相似']);
+const englishA=new Set(['English A・自己紹介','English A・会話表現','英文読解']);
+const japaneseExpr=new Set(['文法','語彙・知識','表現・発表','故事成語','竹取物語']);
+const scienceB=new Set(['地震と火山','地層','気象・水蒸気','気象・湿度','気象・雲','気象・観測','気象・総合','天体']);
+function courseHeading(cat,u){
+ if(cat==='math')return mathGeom.has(u)?'図形（幾何）':'数量（代数）';
+ if(cat==='english')return englishA.has(u)?'English A・読解／コミュニケーション':'English B・文法';
+ if(cat==='japanese')return japaneseExpr.has(u)?'表現・古典／文法':'文学・読解';
+ if(cat==='science')return scienceB.has(u)?'理科B・地学／気象':'理科A・生物';
+ return '';
+}
 function drawStudyPlan(cat){
  const root=document.getElementById('plan-root');
  document.querySelectorAll('[data-plan-subj]').forEach(b=>b.classList.toggle('on',b.dataset.planSubj===cat));
@@ -369,7 +380,10 @@ function drawStudyPlan(cat){
  intro.textContent='学校で扱った単元を「授業中」「既習」に変更します。未習の単元は出題されません。シラバスは年間予定のため実際の授業進度に合わせて設定してください。';
  root.appendChild(intro);
  const tr=document.createElement('div');tr.className='plan-items';
+ let lastHeading='';
  for(const [u,t] of topicPlan[cat]||[]){
+  const heading=courseHeading(cat,u);
+  if(heading&&heading!==lastHeading){const h=document.createElement('h3');h.className='plan-course';h.textContent=heading;tr.appendChild(h);lastHeading=heading;}
   const st=status(cat,u),stats=topicStats(cat,u),item=document.createElement('div');
   item.className='plan-item';
   const top=document.createElement('div');top.className='plan-title';
@@ -444,7 +458,7 @@ for(const cat of ['math','english','japanese','science','history','geography','w
  b.onclick=()=>drawStudyPlan(cat);document.getElementById('plan-tabs').appendChild(b);
 }
 const style=document.createElement('style');
-style.textContent='.study-panel{background:#fff;padding:15px;border-radius:16px;margin:14px 0}.study-panel b{font-size:16px}.mode-options{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:12px}.mode-options button{border:1px solid #ccc;border-radius:12px;padding:12px 3px;background:#f6f6f6;font-size:12px;font-weight:700}.mode-options button.on{background:#171717;color:white}.plan-items{background:#fff;border-radius:15px;padding:10px}.plan-item{padding:12px 5px;border-bottom:1px solid #eee}.plan-title{display:flex;justify-content:space-between;gap:6px;margin-bottom:8px}.plan-title .small{white-space:nowrap}.plan-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:5px}.plan-seg button{background:#fff;border:1px solid #ddd;border-radius:8px;padding:8px 4px;font-size:12px}.plan-seg button.selected{background:#171717;color:#fff}.card:disabled{opacity:.46}';
+style.textContent='.study-panel{background:#fff;padding:15px;border-radius:16px;margin:14px 0}.study-panel b{font-size:16px}.mode-options{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:12px}.mode-options button{border:1px solid #ccc;border-radius:12px;padding:12px 3px;background:#f6f6f6;font-size:12px;font-weight:700}.mode-options button.on{background:#171717;color:white}.plan-items{background:#fff;border-radius:15px;padding:10px}.plan-course{font-size:14px;background:#f3f5f7;padding:9px 10px;margin:14px 0 4px;border-radius:8px}.plan-item{padding:12px 5px;border-bottom:1px solid #eee}.plan-title{display:flex;justify-content:space-between;gap:6px;margin-bottom:8px}.plan-title .small{white-space:nowrap}.plan-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:5px}.plan-seg button{background:#fff;border:1px solid #ddd;border-radius:8px;padding:8px 4px;font-size:12px}.plan-seg button.selected{background:#171717;color:#fff}.card:disabled{opacity:.46}';
 document.head.appendChild(style);
 window.setStudyMode=setStudyMode;
 window.openStudyPlan=openStudyPlan;
