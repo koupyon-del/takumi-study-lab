@@ -48,6 +48,46 @@ function priority(q,cat){
  if(g==='good'&&x.good>=2&&x.days.size>=2)p-=40;
  return p+Math.random()*10;
 }
+/* A new app response is provisional; mark assistance before moving on. */
+const baseAnswer=answer;
+answer=function(index,button){
+ if(state.locked)return;
+ const q=state.set?.[state.i];if(!q)return;
+ active={questionId:q.id,cat:state.cat,unit:q.u,ok:index===state.correctIndex,session:state.session};
+ help='';confidence='';
+ baseAnswer(index,button);
+ let box=document.getElementById('trust-help');
+ if(!box){box=make('div',undefined,'trust-help');box.id='trust-help';document.getElementById('confidence').appendChild(box)}
+ box.innerHTML='';
+ box.appendChild(make('h3','解き方の記録（必須）'));
+ const row=make('div',undefined,'trust-help-row');
+ for(const [v,label] of [['self','自力で解いた'],['hint','ヒント後'],['copied','答えを見た']]){
+  const b=make('button',label,'secondary');
+  b.type='button';b.onclick=()=>{
+   help=v;for(const x of row.children)x.classList.remove('trust-on');
+   b.classList.add('trust-on');
+  };
+  row.appendChild(b);
+ }
+ box.appendChild(row);
+ box.appendChild(make('p','この回答は本人申告です。紙の答案を確認した評価とは区別します。','legend'));
+};
+const baseConfidence=setConfidence;
+setConfidence=function(v,b){baseConfidence(v,b);if(active)confidence=v};
+const baseNext=nextQ;
+nextQ=function(){
+ if(active){
+  if(!confidence){alert('今回の自信度を選んでください。');return}
+  if(!help){alert('「自力・ヒント後・答えを見た」から選んでください。');return}
+  const ev={id:Date.now()+'-'+(++n)+'-'+Math.random().toString(36).slice(2),
+   questionId:active.questionId,cat:active.cat,unit:active.unit,ok:active.ok,
+   session:active.session,help,confidence,at:new Date().toISOString(),source:'student_self_report'};
+  const t=store();t.answers={...t.answers,[ev.id]:ev};cacheRef=null;save();
+  active=null;help='';confidence='';
+ }
+ baseNext();
+};
+
 /* EXTENSION_POINT */
 window.TakumiTrust={store,grade,score,priority,confirmed};
 })();
