@@ -110,5 +110,5 @@ const reads=[
  ['Our classroom has twenty desks but there are eighteen students today.','How many students are there today?',['Eighteen.','Twenty.','Two.','Ten.']],
  ['Mika practiced piano for thirty minutes, then studied English for an hour.','Which activity took longer?',['Studying English.','Practicing piano.','Both took the same time.','Neither activity.']]
 ];
-for(const [text,q,c] of reads)add('現在進行形','【短文読解】'+text+'\n'+q,c,'本文の具体的な表現を確認して答えます。',3);
+for(const [text,q,c] of reads)add('英文読解','【短文読解】'+text+'\n'+q,c,'本文の具体的な表現を確認して答えます。',3);
 })();
