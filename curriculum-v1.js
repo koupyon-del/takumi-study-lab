@@ -381,7 +381,10 @@ function drawStudyPlan(cat){
  root.appendChild(intro);
  const tr=document.createElement('div');tr.className='plan-items';
  let lastHeading='';
- for(const [u,t] of topicPlan[cat]||[]){
+ const rawPlan=topicPlan[cat]||[];
+ const groups=[...new Set(rawPlan.map(([u])=>courseHeading(cat,u)))];
+ const orderedPlan=groups.flatMap(g=>rawPlan.filter(([u])=>courseHeading(cat,u)===g));
+ for(const [u,t] of orderedPlan){
   const heading=courseHeading(cat,u);
   if(heading&&heading!==lastHeading){const h=document.createElement('h3');h.className='plan-course';h.textContent=heading;tr.appendChild(h);lastHeading=heading;}
   const st=status(cat,u),stats=topicStats(cat,u),item=document.createElement('div');
