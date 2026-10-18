@@ -108,13 +108,13 @@ function collect(){
 function saveRecord(){
  try{
   const r=validate(collect());
-  if(!confirm((editingId?'更新':'登録')+'しますか？'+(r.verified?'\\n確認済みの単元評価は弱点優先出題にも反映されます。':'\\n未確認の結果は記録のみ行い、出題優先度には反映されません。')))return;
+  if(!confirm((editingId?'更新':'登録')+'しますか？'+(r.verified?'\n確認済みの単元評価は弱点優先出題にも反映されます。':'\n未確認の結果は記録のみ行い、出題優先度には反映されません。')))return;
   current()[r.id]=r;save();showingForm=false;editingId=null;draw();
  }catch(e){alert(String(e.message||e))}
 }
 function deleteRecord(id){
  const r=current()[id];if(!r||r.deleted)return;
- if(!confirm(r.title+'（'+r.date+'）を削除しますか？\\n学習履歴はそのままです。'))return;
+ if(!confirm(r.title+'（'+r.date+'）を削除しますか？\n学習履歴はそのままです。'))return;
  current()[id]={...r,deleted:true,updatedAt:Date.now()};
  if(editingId===id){editingId=null;showingForm=false}
  save();draw();
@@ -190,7 +190,7 @@ function importResults(ev){
    if(!inputs.length||inputs.length>200)throw Error('取り込み可能な結果がありません');
    const normalized=inputs.map(raw=>validate(raw));
    const verified=normalized.filter(r=>r.verified).length;
-   if(!confirm(normalized.length+'件の考査結果を取り込みますか？\\n確認済み '+verified+'件。既存と同じIDは更新日時の新しい結果を採用します。'))return;
+   if(!confirm(normalized.length+'件の考査結果を取り込みますか？\n確認済み '+verified+'件。既存と同じIDは更新日時の新しい結果を採用します。'))return;
    const all=current();let count=0;
    for(const r of normalized){
     const prev=all[r.id];if(!prev||(Number(r.updatedAt)||0)>(Number(prev.updatedAt)||0)){all[r.id]=r;count++}
