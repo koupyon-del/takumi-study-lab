@@ -1,5 +1,6 @@
 /* Social studies: history and geography with reasoning, time sequence and maps. */
 (function(){
+data.geography=data.geography||[];
 const counters={history:0,geography:0};
 function add(cat,u,q,c,e,star=2){
  const a=c.map(String);if(a.length!==4||new Set(a).size!==4)throw Error('Bad social: '+q);
