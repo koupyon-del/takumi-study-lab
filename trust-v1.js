@@ -42,8 +42,8 @@ mastered=function(r){return confirmed(r)};
 paperGrade=function(cat,u){return grade(cat,u)};
 function priority(q,cat){
  const x=score(q.id),g=grade(cat,q.u);
- let p=q.star*13+(x.seen?Math.max(0,26-x.good*6)+x.wrong*18:48);
- if(x.self===0)p+=25;
+ let p=q.star*13+(x.self?Math.max(0,30-x.good*6)+x.wrong*18:72);
+ if(x.self===0&&x.seen)p+=12;
  if(x.lastConfidence==='again')p+=30;else if(x.lastConfidence==='maybe')p+=15;
  if(g==='weak')p+=52;else if(g==='maybe')p+=29;else if(g==='good')p-=12;
  if(g==='good'&&x.good>=2&&x.days.size>=2)p-=40;
@@ -144,8 +144,8 @@ function statFor(cat,unit){
  const qs=(data[cat]||[]).filter(q=>unit===undefined||q.u===unit);
  let seen=0,correct=0,attempts=0,mas=0,again=0,maybe=0;
  for(const q of qs){
-  const x=score(q.id);if(x.seen)seen++;
-  correct+=x.correct;attempts+=x.seen;
+  const x=score(q.id);if(x.self)seen++;
+  correct+=x.good;attempts+=x.self;
   if(confirmed(rec(q.id)))mas++;
   if(x.lastConfidence==='again')again++;
   if(x.lastConfidence==='maybe')maybe++;
