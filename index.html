@@ -163,7 +163,7 @@ function mergeStudyData(local,remote){
     and preserve deletion tombstones so cloud sync cannot resurrect removed records. */
  result.examRecords={};
  const lr=local.examRecords||{},rr=remote.examRecords||{};
- for(const id of new Set([...Object.keys(lr),...Object.keys(rr)])){
+ for(const id of [...new Set([...Object.keys(lr),...Object.keys(rr)])].sort()){
   const a=lr[id],b=rr[id];
   if(!a||!b){result.examRecords[id]=JSON.parse(JSON.stringify(a||b));continue}
   const at=Number(a.updatedAt)||0,bt=Number(b.updatedAt)||0;
