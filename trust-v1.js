@@ -192,6 +192,22 @@ function trustedReport(){
 buildReport=trustedReport;
 function refresh(){cacheRef=null;updateStats();window.TakumiCurriculum?.drawCards?.()}
 
+
+const css=make('style');
+css.textContent='.trust-info{background:#fff;border-radius:15px;margin:12px 0;padding:15px}.trust-info h3{font-size:16px;margin:0 0 8px}.trust-help{border-top:1px solid #ddd;margin-top:12px;padding-top:12px}.trust-help h3{margin:0 0 9px;font-size:14px}.trust-help-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.trust-help-row button{padding:10px 4px;font-size:12px}.trust-help-row button.trust-on{background:#171717;color:#fff}#trust-paper-info{background:#fff;padding:12px;border-radius:10px;margin:10px 0}';
+document.head.appendChild(css);
+const info=make('section',undefined,'trust-info');
+info.appendChild(make('h3','🔎 信頼できる記録で再評価'));
+const countLabel=make('p',undefined,'legend');countLabel.id='trust-status';info.appendChild(countLabel);
+info.appendChild(make('p','旧アプリ正答率は学力評価に使用しません。新しい回答は「自力・ヒント後・答えを見た」を記録します。自力申告も未検証のため、紙の答案で確認します。','legend'));
+const guide=make('button','10月17日・18日の紙評価を登録する方法','secondary');
+guide.onclick=()=>alert('「📝 紙教材」で10/17・10/18の採点結果JSONを再読み込み、日付と保護者確認を行ってください。これまでの紙評価を自動的に信頼済みにすることはありません。');
+info.appendChild(guide);
+document.getElementById('home')?.querySelector('.hero')?.after(info);
+const notice=make('p',undefined,'legend');notice.id='trust-paper-info';
+const paperScreen=document.getElementById('paper');
+if(paperScreen)paperScreen.insertBefore(notice,paperScreen.querySelector('input[type=file]')||paperScreen.firstChild);
+
 /* EXTENSION_POINT */
 window.TakumiTrust={store,grade,score,priority,confirmed,refresh,summary,report:trustedReport};
 refresh();
