@@ -191,8 +191,8 @@ const en=[
  ['比較','Which is ___, tea or coffee?（よりよい）',['better','best','good','well']]
 ];
 for(const [u,q,c] of en)add('english',u,q,c,'文の主語・時制・語順を確認してください。',2);
-for(const [sub,word,third] of [['he','go','goes'],['she','watch','watches'],['Tom','have','has'],['my father','teach','teaches'],['my sister','wash','washes'],['Mary','study','studies']]){
- add('english','三単現',sub[0].toUpperCase()+sub.slice(1)+' ___ English on Mondays.（動詞：'+word+'）',
+for(const [sub,word,third,object] of [['He','go','goes','to school'],['She','watch','watches','TV'],['Tom','have','has','lunch'],['My father','teach','teaches','English'],['My sister','wash','washes','her hands'],['Mary','study','studies','English']]){
+ add('english','三単現',sub+' ___ '+object+' every day.（動詞：'+word+'）',
  [third,word,word+'ing','is '+word],
  '主語が三人称単数で、習慣を表す現在形なら動詞に-s／-esを付けます。',3);
 }
@@ -287,7 +287,7 @@ function isAllowed(cat,q,mode){
  if(st==='future')return false;
  if(mode==='foundation')return t==='基礎'||(cat==='math'&&['連立方程式','図形の性質と合同','証明'].includes(q.u));
  if(mode==='mi')return st==='now'||st==='learned';
- return (st==='now'||st==='learned')&&t!=='発展';
+ return (st==='now'||st==='learned')&&(q.star>=3||t==='発展');
 }
 function chooseSet(cat,n=10,mode=cfg().mode){
  const pool=(data[cat]||[]).filter(q=>isAllowed(cat,q,mode));
