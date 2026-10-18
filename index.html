@@ -92,6 +92,18 @@ function mergeStudyData(local,remote){
      }
    }
  }
+ const la=local.trust||{},ra=remote.trust||{};
+ if(Object.keys(la).length||Object.keys(ra).length){
+  const pa={};
+  for(const cat of new Set([...Object.keys(la.paper||{}),...Object.keys(ra.paper||{})])){
+   for(const u of new Set([...Object.keys(la.paper?.[cat]||{}),...Object.keys(ra.paper?.[cat]||{})])){
+    const left=la.paper?.[cat]?.[u],right=ra.paper?.[cat]?.[u];
+    const chosen=!left?right:!right?left:Number(left.verifiedAt||0)>Number(right.verifiedAt||0)?left:right;
+    (pa[cat]||(pa[cat]={}))[u]=chosen;
+   }
+  }
+  result.trust={schema:1,answers:{...(ra.answers||{}),...(la.answers||{})},paper:pa};
+ }
  return result;
 }
 async function cloudRead(){
