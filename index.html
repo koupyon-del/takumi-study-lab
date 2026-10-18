@@ -72,10 +72,39 @@ function mergeStudyData(local,remote){
  remote=normalizeStudyData(JSON.parse(JSON.stringify(remote||{})));
  const useLocalQuiz=local.played>remote.played||(local.played===remote.played&&local.quizUpdatedAt>remote.quizUpdatedAt);
  const result=JSON.parse(JSON.stringify(useLocalQuiz?local:remote));
- /* MI年間計画の進度設定は、端末間で更新時刻が新しいものを採用する。 */
+ /* Curriculum components are merged independently to avoid losing lesson checks
+    when another device updates exam scope or switches study mode. */
  const lc=local.curriculum||{},rc=remote.curriculum||{};
- const selected=Number(lc.updatedAt||0)>Number(rc.updatedAt||0)?lc:rc;
- if(Object.keys(selected).length)result.curriculum=JSON.parse(JSON.stringify(selected));
+ if(Object.keys(lc).length||Object.keys(rc).length){
+   const leftTs=Number(lc.updatedAt)||0,rightTs=Number(rc.updatedAt)||0;
+   const winner=leftTs>rightTs?lc:rc;
+   const merged={...winner,units:{},unitUpdatedAt:{},confirmedUnits:{}};
+   const lk=lc.units||{},rk=rc.units||{},lt=lc.unitUpdatedAt||{},rt=rc.unitUpdatedAt||{};
+   for(const k of new Set([...Object.keys(lk),...Object.keys(rk)])){
+     const hasL=Object.prototype.hasOwnProperty.call(lk,k),hasR=Object.prototype.hasOwnProperty.call(rk,k);
+     const tl=hasL?(Number(lt[k])||leftTs):-1;
+     const tr=hasR?(Number(rt[k])||rightTs):-1;
+     const localWins=tl>tr||(tl===tr&&String(lk[k])>String(rk[k]));
+     merged.units[k]=localWins?lk[k]:rk[k];
+     merged.unitUpdatedAt[k]=Math.max(Number(lt[k])||0,Number(rt[k])||0);
+   }
+   const lcChecks=lc.confirmedUnits||{},rcChecks=rc.confirmedUnits||{};
+   for(const k of new Set([...Object.keys(lcChecks),...Object.keys(rcChecks)])){
+     merged.confirmedUnits[k]=Math.max(Number(lcChecks[k])||0,Number(rcChecks[k])||0);
+   }
+   const lModeAt=Number(lc.modeUpdatedAt)||(!lc.mode?0:leftTs);
+   const rModeAt=Number(rc.modeUpdatedAt)||(!rc.mode?0:rightTs);
+   const modeWins=lModeAt>rModeAt||(lModeAt===rModeAt&&String(lc.mode||'')>String(rc.mode||''));
+   merged.mode=(modeWins?lc.mode:rc.mode)||'mi';
+   merged.modeUpdatedAt=Math.max(Number(lc.modeUpdatedAt)||0,Number(rc.modeUpdatedAt)||0);
+   const lExamAt=Number(lc.examUpdatedAt)||(!lc.exam?0:leftTs);
+   const rExamAt=Number(rc.examUpdatedAt)||(!rc.exam?0:rightTs);
+   const examWins=lExamAt>rExamAt||(lExamAt===rExamAt&&JSON.stringify(lc.exam||{})>JSON.stringify(rc.exam||{}));
+   if(lc.exam||rc.exam)merged.exam=JSON.parse(JSON.stringify((examWins?lc.exam:rc.exam)||{}));
+   merged.examUpdatedAt=Math.max(Number(lc.examUpdatedAt)||0,Number(rc.examUpdatedAt)||0);
+   merged.updatedAt=Math.max(leftTs,rightTs,merged.modeUpdatedAt,merged.examUpdatedAt);
+   result.curriculum=merged;
+ }
  result.paper={};result.paperUpdated={};
  const cats=new Set([...Object.keys(local.paper),...Object.keys(remote.paper)]);
  for(const cat of cats){
@@ -130,6 +159,7 @@ async function applyCloudRecord(row){
  updateStats();
  window.TakumiExam?.refresh?.();
  window.TakumiTrust?.refresh?.();
+ window.TakumiCurriculum?.refresh?.();
  cloudReady=true;
  if(JSON.stringify(latestLocal)!==JSON.stringify(serverMerged))cloudPending=true;
 }
