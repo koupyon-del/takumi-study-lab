@@ -88,6 +88,50 @@ nextQ=function(){
  baseNext();
 };
 
+
+function markPaper(cat,u,g,sourceDate,source){
+ if(!['good','maybe','weak'].includes(g))return;
+ const t=store(),now=Date.now();
+ (t.paper[cat]||(t.paper[cat]={}))[u]={grade:g,sourceDate,source,verifiedAt:now};
+ db.paper[cat]=db.paper[cat]||{};db.paperUpdated=db.paperUpdated||{};
+ db.paperUpdated[cat]=db.paperUpdated[cat]||{};
+ db.paper[cat][u]=g;db.paperUpdated[cat][u]=now;
+}
+setPaper=function(cat,u,g){
+ if(!confirm('この紙答案を保護者が確認した結果として登録しますか？\n過去の不確かなアプリ正答率は根拠にしないでください。'))return;
+ markPaper(cat,u,g,new Date().toISOString().slice(0,10),'manual_parent');save();renderPaper();updateStats();
+};
+importPaper=function(ev){
+ const f=ev.target.files?.[0];if(!f)return;
+ const rd=new FileReader();
+ rd.onload=()=>{
+  try{
+   const x=JSON.parse(rd.result),list=[],ref=x.subjects||x.results||{};
+   const grades={'○':'good','△':'maybe','×':'weak',O:'good',A:'maybe',X:'weak',good:'good',maybe:'maybe',weak:'weak'};
+   for(const [cat,vals] of Object.entries(ref)){
+    if(!data[cat]||!vals||typeof vals!=='object')continue;
+    const valid=new Set(data[cat].map(q=>q.u));
+    for(const [u,value] of Object.entries(vals)){
+     const v=typeof value==='string'?value:value?.grade;
+     if(valid.has(u)&&grades[v])list.push([cat,u,grades[v]]);
+    }
+   }
+   if(!list.length){alert('一致する単元評価がありません。');return}
+   const suggested=String(x.sourceDate||x.date||x.gradedAt||'').slice(0,10)||new Date().toISOString().slice(0,10);
+   const date=prompt('紙課題を実施した日を入力してください（YYYY-MM-DD）',suggested);
+   if(!date||!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(Date.parse(date+'T00:00:00'))){alert('日付の確認ができず登録を中止しました。');return}
+   if(!confirm(date+'の紙課題 '+list.length+'単元は、保護者が答案を確認し、自力で取り組んだ結果ですか？\n古い不確かな評価は登録しないでください。'))return;
+   for(const [cat,u,g] of list)markPaper(cat,u,g,date,'verified_paper_import');
+   save();renderPaper();updateStats();alert('確認済み紙教材 '+list.length+'単元を登録しました。');
+  }catch(e){alert('JSONを読み込めませんでした：'+String(e.message||e))}
+  finally{ev.target.value=''}
+ };
+ rd.onerror=()=>{alert('ファイルを読み込めませんでした');ev.target.value=''};
+ rd.readAsText(f,'utf-8');
+};
+const oldOpenPaper=openPaper;
+openPaper=function(cat){oldOpenPaper(cat);const info=document.getElementById('trust-paper-info');if(info)info.textContent='過去の紙評価は参考記録として保存されています。この画面の○△×は、保護者が確認して登録したものだけです。10/17・10/18の結果はJSONを再取り込みするか、答案を見ながら再評価してください。'};
+
 /* EXTENSION_POINT */
 window.TakumiTrust={store,grade,score,priority,confirmed};
 })();
