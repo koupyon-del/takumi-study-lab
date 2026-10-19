@@ -363,7 +363,19 @@ function drawCards(){
   const eligible=countEligible(cat),b=document.createElement('button');
   b.className='card';b.disabled=!eligible;
   b.onclick=()=>start(cat);
-  b.innerHTML='<b>'+icons[cat]+' '+labels[cat]+'</b><span>'+desc[cat]+'<br>現在のモードで '+eligible+'問／'+(cfg().mode==='exam'?(window.TakumiExam?.count()||20):10)+'問ずつ<br>進度確認 '+confirmedCount(cat)+'/'+(topicPlan[cat]?.length||0)+'単元</span>';
+  const currentMode=cfg().mode;
+  let unavailable='';
+  if(!eligible){
+   unavailable=currentMode==='foundation'
+    ?'この科目には基礎リカバリー用の問題がありません。「📚 MI授業復習」に切り替えてください。'
+    :currentMode==='challenge'
+    ?'この科目は応用確認の対象問題がありません。「📚 MI授業復習」を試してください。'
+    :currentMode==='exam'
+    ?'定期考査対策の出題範囲に問題がありません。考査範囲を確認してください。'
+    :'現在の進度・確認済み設定に合う問題がありません。進度設定を確認してください。';
+   b.title=unavailable;
+  }
+  b.innerHTML='<b>'+icons[cat]+' '+labels[cat]+'</b><span>'+desc[cat]+'<br>現在のモードで '+eligible+'問／'+(currentMode==='exam'?(window.TakumiExam?.count()||20):10)+'問ずつ<br>進度確認 '+confirmedCount(cat)+'/'+(topicPlan[cat]?.length||0)+'単元'+(unavailable?'<br><strong style="color:#a9441a">'+unavailable+'</strong>':'')+'</span>';
   cards.appendChild(b);
  }
 }
