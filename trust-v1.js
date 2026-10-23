@@ -49,14 +49,28 @@ function priority(q,cat){
  if(g==='good'&&x.good>=2&&x.days.size>=2)p-=40;
  return p+Math.random()*10;
 }
-/* A new app response is provisional; mark assistance before moving on. */
+/* Store every selected answer immediately as provisional, then refine the SAME
+   event when assistance/confidence is marked. Never infer independent mastery. */
+function saveActive(patch){
+ if(!active?.recordId)return;
+ const t=store(),previous=t.answers[active.recordId]||{};
+ const updated={...previous,...patch,updatedAt:Date.now()};
+ t.answers={...t.answers,[active.recordId]:updated};
+ cacheRef=null;
+ save();
+}
 const baseAnswer=answer;
 answer=function(index,button){
  if(state.locked)return;
  const q=state.set?.[state.i];if(!q)return;
- active={questionId:q.id,cat:state.cat,unit:q.u,ok:index===state.correctIndex,session:state.session};
+ active={questionId:q.id,cat:state.cat,unit:q.u,ok:index===state.correctIndex,
+  session:state.session,recordId:Date.now()+'-'+(++n)+'-'+Math.random().toString(36).slice(2)};
  help='';confidence='';
  baseAnswer(index,button);
+ // Pending is NOT a self-reported success or a confirmed result.
+ saveActive({id:active.recordId,questionId:active.questionId,cat:active.cat,unit:active.unit,
+  ok:active.ok,session:active.session,help:'pending',confidence:'',complete:false,
+  at:new Date().toISOString(),source:'student_self_report'});
  let box=document.getElementById('trust-help');
  if(!box){box=make('div',undefined,'trust-help');box.id='trust-help';document.getElementById('confidence').appendChild(box)}
  box.innerHTML='';
@@ -67,6 +81,7 @@ answer=function(index,button){
   b.type='button';b.onclick=()=>{
    help=v;for(const x of row.children)x.classList.remove('trust-on');
    b.classList.add('trust-on');
+   saveActive({help:v});
   };
   row.appendChild(b);
  }
@@ -74,21 +89,20 @@ answer=function(index,button){
  box.appendChild(make('p','この回答は本人申告です。紙の答案を確認した評価とは区別します。','legend'));
 };
 const baseConfidence=setConfidence;
-setConfidence=function(v,b){baseConfidence(v,b);if(active)confidence=v};
+setConfidence=function(v,b){
+ baseConfidence(v,b);
+ if(active){confidence=v;saveActive({confidence:v})}
+};
 const baseNext=nextQ;
 nextQ=function(){
  if(active){
   if(!confidence){alert('今回の自信度を選んでください。');return}
   if(!help){alert('「自力・ヒント後・答えを見た」から選んでください。');return}
-  const ev={id:Date.now()+'-'+(++n)+'-'+Math.random().toString(36).slice(2),
-   questionId:active.questionId,cat:active.cat,unit:active.unit,ok:active.ok,
-   session:active.session,help,confidence,at:new Date().toISOString(),source:'student_self_report'};
-  const t=store();t.answers={...t.answers,[ev.id]:ev};cacheRef=null;save();
+  saveActive({help:help,confidence:confidence,complete:true});
   active=null;help='';confidence='';
  }
  baseNext();
 };
-
 
 function markPaper(cat,u,g,sourceDate,source){
  if(!['good','maybe','weak'].includes(g))return;
