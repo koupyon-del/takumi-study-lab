@@ -119,11 +119,11 @@ function pick(cat,n,pool,mode){
  return chosen;
 }
 selectSet=function(cat,n=10){
- const mode=window.TakumiCurriculum?.cfg?.()?.mode||'mi';
+ const mode=window.TakumiCurriculum?.mode?.()||'mi';
  if(mode==='exam'||mode==='challenge'||!['math','english','japanese','science','history','geography'].includes(cat))
   return prevSelect(cat,n);
  try{
-  const pool=(data[cat]||[]).filter(q=>isAllowed(cat,q,mode));
+  const pool=(data[cat]||[]).filter(q=>window.TakumiCurriculum.isAllowed(cat,q,mode));
   if(!pool.length)return prevSelect(cat,n);
   return pick(cat,n,pool,mode);
  }catch(err){console.error('適応出題の安全切替:',err);return prevSelect(cat,n)}
