@@ -449,7 +449,7 @@ function launchFoundationCheck(){
   if(qs.length){const ev=window.TakumiTrust;const pool=[...qs].sort((a,b)=>{const sa=ev?.score?.(a.id),sb=ev?.score?.(b.id);const aScore=(sa?.self||0)+((sa?.good||0)*0.1),bScore=(sb?.self||0)+((sb?.good||0)*0.1);return aScore-bScore;});taken.push(pool[0]);}
  }
  state.cat='math';state.set=taken;state.i=0;state.score=0;state.locked=false;
- state.session=++db.sessions;db.quizUpdatedAt=Date.now();save();
+ state.session=++db.sessions;state.weeklySession=state.session;db.quizUpdatedAt=Date.now();save();
  studyCheck={mode:stateMode,answers:[]};
  show('quiz');render();
 }
