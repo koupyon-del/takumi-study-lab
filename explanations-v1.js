@@ -258,11 +258,11 @@ function openReview(id){
  drawReview(body,sessions.find(x=>x.id===id)||sessions[0]);
  for(const b of actions.children){if(b.textContent===actions.children[0]?.textContent)b.classList.add('ts-selected')}
 }
-for(const selector of ['#progress .qbox','#home .home-help']){
+for(const selector of ['#progress .qbox','#home']){
  const target=document.querySelector(selector);if(!target)continue;
  const b=say('button','📘 前回の解説・間違い直しを見る','secondary');
  b.type='button';b.style.width='100%';b.style.marginTop='12px';b.onclick=()=>openReview();
- target.appendChild(b);
+ if(selector==='#home'){const before=document.querySelector('#home .home-help');if(before)target.insertBefore(b,before);else target.appendChild(b)}else target.appendChild(b);
 }
 const style=document.createElement('style');
 style.textContent='.ts-explain-card{margin:12px 0;padding:12px;border-radius:10px;border:1px solid #dce3e6;background:#f7fafb;font-size:14px;line-height:1.75;white-space:normal}.ts-explain-card strong{display:block;font-size:14px}.ts-explain-card ol{padding-left:21px;margin:7px 0}.ts-explain-card li{margin:7px 0}.ts-explain-answer{font-weight:700;margin:8px 0}.ts-review-card{background:white;border:1px solid #ddd;border-radius:12px;margin:12px 0;padding:12px;overflow-wrap:anywhere}.ts-review-card summary{cursor:pointer;font-weight:750;line-height:1.5}.ts-review-card p{line-height:1.7}.ts-note{font-size:12px;color:#555;line-height:1.6}.ts-practice{border-top:1px solid #ccc;padding-top:13px}.ts-practice details{padding:9px;background:#fafafa;border-radius:8px}.ts-review-options{font-size:14px;line-height:1.75}.ts-review-history{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}.ts-review-history button{font-size:12px}.ts-review-history button.ts-selected{font-weight:900;border-color:#222}';
