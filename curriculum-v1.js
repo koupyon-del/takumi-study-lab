@@ -499,6 +499,6 @@ document.head.appendChild(style);
 window.setStudyMode=setStudyMode;
 window.openStudyPlan=openStudyPlan;
 window.launchFoundationCheck=launchFoundationCheck;
-window.TakumiCurriculum={drawCards,drawMode,status,isConfirmed,confirmedCount,confirmSubject,refresh(){drawMode();drawCards();const plan=document.getElementById('studyplan');if(plan?.classList?.contains('active')){const active=document.querySelector('[data-plan-subj].on');drawStudyPlan(active?.dataset?.planSubj||'math');}}};
+window.TakumiCurriculum={drawCards,drawMode,status,isAllowed,isConfirmed,confirmedCount,confirmSubject,mode(){return cfg().mode},refresh(){drawMode();drawCards();const plan=document.getElementById('studyplan');if(plan?.classList?.contains('active')){const active=document.querySelector('[data-plan-subj].on');drawStudyPlan(active?.dataset?.planSubj||'math');}}};
 drawMode();drawCards();drawStudyPlan('math');
 })();
