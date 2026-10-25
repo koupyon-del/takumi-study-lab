@@ -67,14 +67,14 @@ function explain(q,cat){
   }else add('式の意味を確認し、どの性質・公式を使うか説明してから答えを出します。');
  }else if(cat==='english'){
   // Prefer the actual tested sentence/answer over generic rules that may not fit.
-  const has=(re)=>re.test(s)||re.test(answer);
+  const has=(re)=>re.test(String(q.q||''))||re.test(answer);
   const u=String(q.u||'');
   if(/現在進行形/.test(u)){
    add('現在進行形は「主語＋am / is / are＋動詞の-ing形」で表します。');
    add('疑問文はbe動詞を主語の前へ、否定文はbe動詞の後ろにnotを置きます。');
   }else if(/過去形/.test(u)){
    add('過去の肯定文では動詞の過去形を用います。不規則動詞は形を覚えます。');
-   add('過去の疑問文・否定文は「Did / did not＋主語など＋動詞の原形」の語順に注意します（主語とdidの位置は文型に従います）。');
+   add('過去の疑問文は「Did＋主語＋動詞の原形…?」、否定文は「主語＋did not＋動詞の原形…」が基本です。');
   }else if(/未来/.test(u)){
    add('未来の表現は「will＋動詞の原形」または「am / is / are going to＋動詞の原形」です。');
    add('主語に合わせてbe動詞を選び、willやgoing toの直後の動詞の形を確認しましょう。');
