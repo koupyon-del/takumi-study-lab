@@ -177,15 +177,34 @@ show=function(id){
  }
  oldShow(id)
 };
-// Daily priority: show the adaptive tutoring menu first, without opening any fold.
+// Daily tutoring stays prominent, but the large task list opens only on demand.
 const cards=document.getElementById('cards');
 const focus=home.querySelector('.ts-focus');
-if(focus){
- const intro=mk('p','毎日の学習はここから','ts-daily-lead');
- const anchor=home.querySelector('.hero')||cards;
- if(anchor){home.insertBefore(intro,anchor);home.insertBefore(focus,anchor)}
- else home.append(intro,focus);
-}
+const daily=mk('details',null,'ts-daily-fold');daily.id='ts-home-daily';
+const dailySummary=mk('summary',null,'ts-daily-summary');
+dailySummary.append(
+ mk('span','毎日の必修学習','ts-daily-eyebrow'),
+ mk('strong','数学と英語を、今日も少しずつ。','ts-daily-title'),
+ mk('span','一歩ずつ積み重ねよう。','ts-daily-message'),
+ mk('span','個別補習メニューを開く ▾','ts-daily-open'),
+ mk('span','個別補習メニューを閉じる ▴','ts-daily-close')
+);
+daily.appendChild(dailySummary);
+if(focus)daily.appendChild(focus);
+const topAnchor=home.querySelector('.hero')||cards;
+if(topAnchor)home.insertBefore(daily,topAnchor);else home.appendChild(daily);
+
+// Study course directly controls which questions appear in ordinary subject practice.
+// Reuse the original buttons (including Exam mode), so no setting or handlers are duplicated.
+const course=mk('section',null,'ts-course-choice');course.id='ts-home-course-choice';
+course.append(
+ mk('h3','学習コースを選択','ts-course-title'),
+ mk('p','教科別の通常練習の出題範囲を切り替えます。個別補習メニューは専用の学習プランで出題します。','ts-course-hint')
+);
+const studyPanel=home.querySelector('.study-panel');
+const modeButtons=studyPanel?.querySelector('.mode-options');
+if(modeButtons)course.appendChild(modeButtons);
+if(cards)home.insertBefore(course,cards);else home.appendChild(course);
 const header=mk('h3','教科別の通常練習','ts-deck-sectiontitle');
 if(cards)home.insertBefore(header,cards);
 const lesson=home.querySelector('.ts-video-home');
@@ -199,8 +218,12 @@ launchPanel.append(title,intro,openButton);
 const optionalAnchor=lesson||cards;
 if(optionalAnchor)optionalAnchor.after(launchPanel);else home.appendChild(launchPanel);
 // Rarely used settings and reports remain collapsible, preserving the local fold state.
-const controls=mk('details',null,'ts-home-fold');controls.id='ts-home-courses';controls.appendChild(mk('summary','学習コース・進度設定を開く'));
-const studyPanel=home.querySelector('.study-panel');if(studyPanel)controls.appendChild(studyPanel);
+const controls=mk('details',null,'ts-home-fold');controls.id='ts-home-courses';controls.appendChild(mk('summary','単元の進度・シラバス・出題設定を開く'));
+if(studyPanel){
+ const heading=studyPanel.querySelector('b');
+ if(heading)heading.textContent='単元の進度・出題条件の詳しい設定';
+ controls.appendChild(studyPanel);
+}
 const summary=mk('details',null,'ts-home-fold');summary.id='ts-home-details';summary.appendChild(mk('summary','進捗・記録・保護者メニューを開く'));
 const stats=home.querySelector('.stats');if(stats)summary.appendChild(stats);
 for(const actions of [...home.querySelectorAll(':scope > .actions')])summary.appendChild(actions);
@@ -220,8 +243,27 @@ for(const [node,key] of [[controls,'courses'],[summary,'details']]){
  });
 }
 const css=`
-.ts-daily-lead{font-size:12px;font-weight:800;color:#45657e;margin:17px 2px 4px}
-#home>.ts-focus{margin:8px 0 16px;border-color:#b9cddc;box-shadow:0 2px 12px rgba(32,56,76,.055)}
+.ts-daily-fold{display:block;margin:14px 0 14px;background:#edf4f8;border:1px solid #b9cedd;border-radius:16px;padding:0;overflow:hidden}
+.ts-daily-summary{display:flex;flex-direction:column;gap:5px;cursor:pointer;padding:14px 16px;list-style:none;line-height:1.4}
+.ts-daily-summary::-webkit-details-marker{display:none}
+.ts-daily-summary::marker{content:''}
+.ts-daily-summary:focus-visible{outline:3px solid #4e819b;outline-offset:-3px}
+.ts-daily-eyebrow{color:#426b83;font-size:12px;font-weight:900;letter-spacing:.03em}
+.ts-daily-title{font-size:17px;font-weight:850;color:#193b54}
+.ts-daily-message{font-size:12px;color:#537083}
+.ts-daily-open,.ts-daily-close{font-size:13px;font-weight:850;margin-top:5px;padding:10px 12px;border-radius:9px;background:#fff;color:#20435b;text-align:center;border:1px solid #c3d5e0}
+.ts-daily-close,.ts-daily-fold[open] .ts-daily-open{display:none}
+.ts-daily-fold[open] .ts-daily-close{display:block}
+.ts-daily-fold .ts-focus{margin:0 11px 12px;border:1px solid #dbe3e8;box-shadow:none;padding:12px}
+.ts-daily-fold .ts-focus h3{font-size:15px}
+.ts-daily-fold .ts-focus p,.ts-daily-fold .ts-focus .ts-task-note{font-size:12px}
+.ts-course-choice{margin:14px 0 8px;padding:15px 14px;background:#fff;border:1px solid #dce3e9;border-radius:15px}
+.ts-course-title{font-size:16px;margin:0 0 8px;color:#20384c}
+.ts-course-hint{font-size:12px;line-height:1.6;color:#647381;margin:0}
+.ts-course-choice .mode-options{margin-top:10px}
+.ts-course-choice .mode-options button{min-height:49px;padding:10px 5px;line-height:1.45;font-size:12px}
+.ts-course-choice .mode-options button.on{outline:2px solid #4c8295;outline-offset:1px}
+@media(max-width:370px){.ts-course-choice .mode-options button{font-size:11px;padding:9px 3px}}
 .ts-deck-home{margin:20px 0 12px;padding:13px 15px;background:#fff;border:1px solid #dce2e7;border-radius:14px}
 .ts-deck-home strong{font-size:14px}.ts-deck-home p{font-size:12px;line-height:1.5;color:#65717d;margin:8px 0}
 .ts-deck-home button{width:100%;font-weight:700;background:#f7f9fb}
@@ -230,7 +272,6 @@ const css=`
 .ts-home-fold>summary{font-weight:700;font-size:14px;padding:5px 2px;cursor:pointer}
 .ts-home-fold[open]>summary{margin-bottom:12px}
 .ts-home-fold .study-panel{box-shadow:none;margin:0;padding:8px 0}
-.ts-home-fold .ts-focus{margin:0 0 13px}
 .ts-home-fold .home-help{margin-top:16px}
 .ts-request-screen h2{font-size:22px;margin:20px 0 9px}
 .ts-deck-intro{font-size:13px;color:#5d6b76;line-height:1.7}
@@ -249,5 +290,5 @@ const css=`
 @media(min-width:650px){.ts-deck-form{grid-template-columns:1fr 1fr}}
 `;
 document.head.appendChild(mk('style',css));
-window.TakumiRequestDeck={open,form,subjectPool,uniqueBank,eligibleCandidates,assembled,version:'2.2.1'};
+window.TakumiRequestDeck={open,form,subjectPool,uniqueBank,eligibleCandidates,assembled,version:'2.3.0'};
 })();
