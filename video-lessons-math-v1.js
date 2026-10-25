@@ -46,19 +46,37 @@ const lessons=[
  ['式を引いて個数を求める',['2n＋p＝10','−) n＋p＝7','★ n＝3、p＝4'],'pが消え、n＝3。①に戻してp＝4。','二本の式を引くとエヌは三、ピーは四です。'],
  ['単位を付けて検算',['✓ 3＋4＝7個','✓ 180×3＋90×4＝900円','★ ノート3冊、ペン4本'],'個数も代金も一致。答えには単位を付けます。','個数も金額も一致しました。']
 ]}];
+
+lessons.push({
+ id:'fraction',title:'分数を含む連立：分母を払う',level:'L3',
+ subtitle:'等式の全項に同じ数を掛ける',minutes:'約2分',
+ practice:['x÷3＋y÷2＝4、x−y＝2','最初の式全体に6を掛けて 2x＋3y＝24。次に2本の式のyの係数をそろえます。','2x＋3y＝24、3x−3y＝6 を加えると5x＝30。x＝6、y＝4。検算：6÷3＋4÷2＝4、6−4＝2。'],
+ steps:[
+  ['分母のある式を見る',['① x÷2＋y÷3＝3','② x−y＝1'],'分数を含む式は、最小公倍数を掛けると整数係数の式になります。','最初の式はエックス割る二、プラス、ワイ割る三、イコール三です。'],
+  ['式全体に6を掛ける',['①の両辺を6倍','6×(x÷2)＋6×(y÷3)＝6×3','★ 3x＋2y＝18'],'分母2と3の最小公倍数は6。すべての項に6を掛けます。','左辺のそれぞれの項と右辺を、六倍しましょう。',['x÷2＋y÷3＝3 を6倍した式は？',['3x＋2y＝18','3x＋2y＝3','6x＋6y＝18'],0,'x÷2は3x、y÷3は2y、右辺3は18になります。']],
+  ['もう1本も係数をそろえる',['② x−y＝1','②を2倍','★ 2x−2y＝2'],'yの係数を＋2と−2にそろえます。','二本目の式を二倍すると、二エックス、マイナス二ワイ、イコール二です。'],
+  ['足して2文字を求める',['(3x＋2y)＋(2x−2y)＝18＋2','★ 5x＝20 → x＝4','②に戻してy＝3'],'係数をそろえれば、yが消えます。もう一方も求めましょう。','式を足すと五エックスは二十です。エックスは四、ワイは三です。'],
+  ['両方の式で検算',['✓ 4÷2＋3÷3＝3','✓ 4−3＝1','★ (x, y)＝(4, 3)'],'分数のまま元の2式へ戻し、どちらも成立するか確認します。','元の二本の式に戻して確かめます。']
+ ]
+});
+
 for(const l of lessons){
  if(!l.steps||l.steps.length<4||!l.practice)throw Error('Invalid math lesson');
  for(const s of l.steps)if(!s[1].length||!s[2]||!s[3]||(s[4]&&(s[4][2]<0||s[4][2]>=s[4][1].length)))throw Error('Invalid slide');
 }
 const el=(tag,text,cls)=>{const x=document.createElement(tag);if(text!==undefined&&text!==null)x.textContent=String(text);if(cls)x.className=cls;return x};
 const screen=el('section',null,'screen ts-video-screen');screen.id='ts-video-screen';document.querySelector('.wrap').appendChild(screen);
-let selected=null,index=0,from='home',timer=null,auto=false,speed=1,answers=new Map(),spoken=null;
+let selected=null,index=0,from='home',timer=null,auto=false,speed=1,answers=new Map(),spoken=null,origin=null;
 function cancelAudio(){try{window.speechSynthesis?.cancel()}catch(e){}spoken=null}
 function stop(){if(timer!==null)clearTimeout(timer);timer=null;auto=false;cancelAudio()}
 const priorShow=show;show=function(id){if(id!==screen.id)stop();priorShow(id)};
 function exit(){stop();selected=null;show(from)}
-function openList(source){stop();selected=null;from=source||from;paintList();show(screen.id)}
-function openLesson(id,source){stop();selected=lessons.find(x=>x.id===id)||lessons[0];from=source||from;index=0;answers=new Map();paintPlayer();show(screen.id)}
+function openList(source){stop();selected=null;origin=null;from=source||from;paintList();show(screen.id)}
+function openLesson(id,source,stage=0,sourceQuestion=null){
+ stop();selected=lessons.find(x=>x.id===id)||lessons[0];from=source||from;
+ index=Math.max(0,Math.min(selected.steps.length-1,Math.floor(Number(stage)||0)));
+ origin=sourceQuestion;answers=new Map();paintPlayer();show(screen.id)
+}
 function paintList(){
  screen.replaceChildren();
  const b=el('button','← 戻る','back');b.type='button';b.onclick=exit;
@@ -104,6 +122,13 @@ function paintPlayer(){
  screen.replaceChildren();
  const back=el('button','← 授業一覧','back');back.type='button';back.onclick=()=>{stop();paintList()};
  screen.append(back,el('h2',selected.title),el('p',selected.level+'｜'+selected.subtitle+'｜'+selected.minutes,'ts-note'));
+ if(origin){
+  const context=el('div',null,'ts-question-bridge');
+  context.append(el('strong','いま解いた問題に関連する授業です'),el('p',origin.q));
+  if(origin.note)context.appendChild(el('p',origin.note,'ts-note'));
+  context.appendChild(el('small','※ この授業は解き方を説明します。問題の数値・設問形式は異なる場合があります。'));
+  screen.appendChild(context);
+ }
  const outer=el('div',null,'ts-progress');const inside=el('div',null,'ts-progress-bar');inside.id='ts-progress-fill';outer.appendChild(inside);screen.appendChild(outer);
  const prog=el('p',null,'ts-note ts-count');prog.id='ts-stage-count';screen.appendChild(prog);
  const stage=el('div',null,'ts-vstage');stage.id='ts-vstage';screen.appendChild(stage);
@@ -160,13 +185,43 @@ function paintStep(){
  const autoStatus=document.getElementById('ts-auto-status');if(autoStatus)autoStatus.textContent='';
  setAutoButton();if(auto)tick()
 }
-function recommended(q){
- const s=String(q?.q||'');
- if(/文章題|何冊|何本|代金|個数|人数|合計/.test(s))return 'word';
- if(/負|符号|分配|括弧|−2/.test(s))return 'sign';
- if(/代入|y＝|y=/.test(s))return 'sub';
- if(/係数|そろえ|2倍|3倍/.test(s))return 'coef';
- return 'add'
+function matchQuestion(q){
+ if(!q||q.u!=='連立方程式')return null;
+ const s=String(q.q||''),id=String(q.id||'');
+ // Specific legacy concept checks override keyword guesses.
+ const originals={
+  M001:['add',0],M026:['add',0],
+  M002:['coef',0],M027:['coef',0],
+  M003:['sub',0],M028:['sub',0],
+  M004:['fraction',0],M029:['fraction',0],
+  M005:['word',1],M030:['word',1]
+ };
+ let match=originals[id];
+ if(!match){
+  if(/分数|小数|分母|通分|÷|\/|[⅓½¼¾]/.test(s))match=['fraction',1];
+  else if(/文章題|冊|本|代金|個数|人数|合計|速さ|濃度|買い物|何円/.test(s))match=['word',1];
+  else if(/分配|括弧|かっこ|符号|負の数|−2\(|-\s*2\(/.test(s))match=['sign',2];
+  else if(/【連立・代入】|代入法|代入|y[=＝]/.test(s))match=['sub',1];
+  else if(/係数|そろえ|同じ数倍|２倍|2倍|３倍|3倍/.test(s))match=['coef',1];
+  else match=['add',1];
+ }
+ const lesson=lessons.find(l=>l.id===match[0]);
+ return lesson?{id:lesson.id,step:match[1],title:lesson.title}:null;
+}
+function openForQuestion(q,source){
+ const route=matchQuestion(q);if(!route)return false;
+ const note='問題の該当単元を手掛かりに選んだ授業です。誤答原因を断定するものではありません。';
+ openLesson(route.id,source||'quiz',route.step,{q:String(q.q||''),note});
+ return true;
+}
+function attachQuestionLink(target,q,source,wrong){
+ const route=matchQuestion(q);if(!route||!target)return null;
+ const b=el('button',wrong?'▶ 間違えた問題を板書で復習':'▶ この問題の解き方を動画で確認','secondary ts-video-quiz');
+ b.type='button';
+ b.setAttribute('aria-label',(wrong?'間違い直し：':'関連解説：')+route.title);
+ b.onclick=()=>openForQuestion(q,source);
+ target.appendChild(b);
+ return b;
 }
 const home=document.getElementById('home');
 if(home){
@@ -176,16 +231,19 @@ if(home){
 }
 const oldAnswer=answer;
 answer=function(...args){
- const q=state?.set?.[state.i];const isTarget=state?.cat==='math'&&q?.u==='連立方程式';
+ const q=state?.set?.[state.i],cat=state?.cat;
+ const eligible=cat==='math'&&matchQuestion(q);
+ const isCorrect=args[0]===state.correctIndex;
  oldAnswer(...args);
- if(!isTarget||!state.locked)return;
- const f=document.getElementById('feedback');if(!f||f.querySelector('.ts-video-quiz'))return;
- const b=el('button','▶ この単元の板書授業を見る','secondary ts-video-quiz');b.type='button';b.onclick=()=>openLesson(recommended(q),'quiz');f.appendChild(b)
+ if(!eligible||!state.locked)return;
+ const f=document.getElementById('feedback');
+ if(!f||f.querySelector('.ts-video-quiz'))return;
+ attachQuestionLink(f,q,'quiz',!isCorrect);
 };
 const css=`
 .ts-video-home{margin:14px 0;padding:15px;border:1px solid #ced9e9;background:#edf3fb;border-radius:15px}
 .ts-video-home strong{font-size:16px}.ts-video-home p{font-size:13px;line-height:1.65}
-.ts-video-home button,.ts-video-quiz{width:100%;margin-top:9px;font-weight:700}
+.ts-video-home button,.ts-video-quiz{width:100%;margin-top:9px;font-weight:700}.ts-question-bridge{border:1px solid #c8d8e7;background:#eef6fb;padding:12px 14px;border-radius:12px;margin:12px 0;line-height:1.6}.ts-question-bridge p{font-size:14px;margin:7px 0}.ts-question-bridge small{font-size:11px;color:#5c6d7f}
 .ts-video-screen h2{font-size:21px;margin:14px 0;line-height:1.5}
 .ts-note{font-size:12px;color:#5c6d7f;line-height:1.7}.ts-vgrid{display:grid;grid-template-columns:1fr;gap:12px}
 .ts-vcard{display:flex;flex-direction:column;gap:8px;border:1px solid #d8e2ed;background:white;padding:16px;text-align:left;border-radius:15px}
@@ -217,5 +275,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,lessonList:lessons.map(x=>({id:x.id,title:x.title,level:x.level,steps:x.steps.length})),version:'2.0.0'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,title:x.title,level:x.level,steps:x.steps.length})),version:'2.1.0'};
 })();
