@@ -60,7 +60,13 @@ lessons.push({
  ]
 });
 
+// Additional lessons are provided as static, audited lesson data.
+for(const next of (window.TakumiExtraMathLessons||[])){
+ if(lessons.some(l=>l.id===next.id))throw Error('Duplicated lesson id '+next.id);
+ lessons.push(next);
+}
 for(const l of lessons){
+ if(!l.group)l.group='連立方程式';
  if(!l.steps||l.steps.length<4||!l.practice)throw Error('Invalid math lesson');
  for(const s of l.steps)if(!s[1].length||!s[2]||!s[3]||(s[4]&&(s[4][2]<0||s[4][2]>=s[4][1].length)))throw Error('Invalid slide');
 }
@@ -81,13 +87,21 @@ function paintList(){
  screen.replaceChildren();
  const b=el('button','← 戻る','back');b.type='button';b.onclick=exit;
  screen.append(b,el('h2','数学｜動く板書授業'),el('p','解法を短い授業に分けました。音声は任意で再生できます。視聴や確認問題を自力正答率に加算しません。','ts-note'));
- const grid=el('div',null,'ts-vgrid');
- for(const l of lessons){
-  const btn=el('button',null,'ts-vcard');btn.type='button';
-  btn.append(el('span',l.level+'・'+l.minutes,'ts-level'),el('strong',l.title),el('small',l.subtitle));
-  btn.onclick=()=>openLesson(l.id,from);grid.appendChild(btn);
+ const groups=['一次不等式','代数の基礎','連立方程式'];
+ for(const group of groups){
+  const subset=lessons.filter(l=>l.group===group);
+  if(!subset.length)continue;
+  const fold=el('details',null,'ts-lesson-group');fold.open=group==='一次不等式';
+  const heading=el('summary',group+'（'+subset.length+'講座）','ts-lesson-group-title');
+  fold.appendChild(heading);
+  const grid=el('div',null,'ts-vgrid');
+  for(const l of subset){
+   const btn=el('button',null,'ts-vcard');btn.type='button';
+   btn.append(el('span',l.level+'・'+l.minutes,'ts-level'),el('strong',l.title),el('small',l.subtitle));
+   btn.onclick=()=>openLesson(l.id,from);grid.appendChild(btn);
+  }
+  fold.appendChild(grid);screen.appendChild(fold);
  }
- screen.appendChild(grid);
 }
 function speak(){
  const st=selected?.steps[index],status=document.getElementById('ts-audio-status');if(!st)return;
@@ -186,26 +200,52 @@ function paintStep(){
  setAutoButton();if(auto)tick()
 }
 function matchQuestion(q){
- if(!q||q.u!=='連立方程式')return null;
- const s=String(q.q||''),id=String(q.id||'');
- // Specific legacy concept checks override keyword guesses.
- const originals={
-  M001:['add',0],M026:['add',0],
-  M002:['coef',0],M027:['coef',0],
-  M003:['sub',0],M028:['sub',0],
-  M004:['fraction',0],M029:['fraction',0],
-  M005:['word',1],M030:['word',1]
- };
- let match=originals[id];
- if(!match){
-  if(/分数|小数|分母|通分|÷|\/|[⅓½¼¾]/.test(s))match=['fraction',1];
-  else if(/文章題|冊|本|代金|個数|人数|合計|速さ|濃度|買い物|何円/.test(s))match=['word',1];
-  else if(/【加減法】/.test(s))match=['add',1];
-  else if(/分配|括弧|かっこ|符号|負の数|−2\(|-\s*2\(/.test(s))match=['sign',2];
-  else if(/【連立・代入】|代入法|代入|y[=＝]/.test(s))match=['sub',1];
-  else if(/係数|そろえ|同じ数倍|２倍|2倍|３倍|3倍/.test(s))match=['coef',1];
-  else match=['add',1];
- }
+ if(!q)return null;
+ const s=String(q.q||''),id=String(q.id||''),u=q.u;
+ let match=null;
+ if(u==='1次不等式'){
+  const first={
+   M006:['ineq-basic',0],M031:['ineq-basic',0],
+   M007:['ineq-negative',0],M032:['ineq-negative',0],
+   M008:['ineq-symbol',4],M033:['ineq-symbol',4],
+   M009:['ineq-symbol',1],M034:['ineq-symbol',1],
+   M010:['ineq-symbol',3],M035:['ineq-symbol',3],
+   M011:['ineq-basic',1],M036:['ineq-basic',1]
+  };
+  match=first[id];
+  if(!match){
+   if(/括弧|かっこ|分配|−\s?\d+\s*\(|-\s?\d+\s*\(/.test(s))match=['ineq-bracket',1];
+   else if(/負の数|負数|負の係数|負の|マイナス|反転|逆向き|【不等式】\s*[-−－]\s*\d+x|[＜≦≤]\s*[-−－]\s*\d+x/.test(s))match=['ineq-negative',2];
+   else if(/以上|以下|未満|境界|含む|解とは|どの不等号/.test(s))match=['ineq-symbol',1];
+   else match=['ineq-basic',1];
+  }
+ }else if(u==='正負の数'){
+  match=/【積】|【商】|掛け算|割り算|同符号|異符号/.test(s)?['algebra-mul',1]:['algebra-add',1];
+ }else if(u==='文字式'){
+  match=/【分配】|展開|括弧|かっこ/.test(s)?['algebra-expand',1]:['algebra-sub',1];
+ }else if(u==='一次方程式'){
+  match=['algebra-eq',1];
+ }else if(u==='分数方程式'){
+  match=['algebra-frac',1];
+ }else if(u==='連立方程式'){
+  const originals={
+   M001:['add',0],M026:['add',0],
+   M002:['coef',0],M027:['coef',0],
+   M003:['sub',0],M028:['sub',0],
+   M004:['fraction',0],M029:['fraction',0],
+   M005:['word',1],M030:['word',1]
+  };
+  match=originals[id];
+  if(!match){
+   if(/分数|小数|分母|通分|÷|\/|[⅓½¼¾]/.test(s))match=['fraction',1];
+   else if(/文章題|冊|本|代金|個数|人数|合計|速さ|濃度|買い物|何円/.test(s))match=['word',1];
+   else if(/【加減法】/.test(s))match=['add',1];
+   else if(/分配|括弧|かっこ|符号|負の数|−2\(|-\s*2\(/.test(s))match=['sign',2];
+   else if(/【連立・代入】|代入法|代入|y[=＝]/.test(s))match=['sub',1];
+   else if(/係数|そろえ|同じ数倍|２倍|2倍|３倍|3倍/.test(s))match=['coef',1];
+   else match=['add',1];
+  }
+ }else return null;
  const lesson=lessons.find(l=>l.id===match[0]);
  return lesson?{id:lesson.id,step:match[1],title:lesson.title}:null;
 }
@@ -242,6 +282,10 @@ answer=function(...args){
  attachQuestionLink(f,q,'quiz',!isCorrect);
 };
 const css=`
+.ts-lesson-group{margin:14px 0;background:#f8fafc;border:1px solid #d9e3ed;border-radius:13px;overflow:hidden}
+.ts-lesson-group-title{font-size:16px;font-weight:800;padding:14px 15px;cursor:pointer;color:#23415a}
+.ts-lesson-group[open] .ts-lesson-group-title{border-bottom:1px solid #d9e3ed;background:#edf4fa}
+.ts-lesson-group .ts-vgrid{padding:12px}
 .ts-video-home{margin:14px 0;padding:15px;border:1px solid #ced9e9;background:#edf3fb;border-radius:15px}
 .ts-video-home strong{font-size:16px}.ts-video-home p{font-size:13px;line-height:1.65}
 .ts-video-home button,.ts-video-quiz{width:100%;margin-top:9px;font-weight:700}.ts-question-bridge{border:1px solid #c8d8e7;background:#eef6fb;padding:12px 14px;border-radius:12px;margin:12px 0;line-height:1.6}.ts-question-bridge p{font-size:14px;margin:7px 0}.ts-question-bridge small{font-size:11px;color:#5c6d7f}
@@ -276,5 +320,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,title:x.title,level:x.level,steps:x.steps.length})),version:'2.1.0'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,title:x.title,level:x.level,steps:x.steps.length})),version:'2.4.0'};
 })();
