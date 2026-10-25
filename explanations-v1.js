@@ -1,4 +1,4 @@
-/* Study Lab: answer explanations and self-review, v1.8.0.
+/* Study Lab: answer explanations and self-review, v1.9.1.
    UI-only learning aid. The original correctness, question IDs and evidence remain unchanged.
    Review drill answers are never counted as trusted independent answers. */
 (function(){
@@ -8,7 +8,7 @@ const byId={};
 for(const [cat,qs] of Object.entries(data))for(const q of qs)byId[q.id]={q,cat};
 const clean=s=>String(s||'').replace(/^【[^】]+】\s*/,'').replace(/\s+/g,'').normalize('NFKC');
 const say=(tag,txt,cls)=>{const e=document.createElement(tag);if(txt!==undefined)e.textContent=String(txt);if(cls)e.className=cls;return e;};
-const renderMath=e=>{if(e&&typeof window.TakumiMathFractions?.displayMath==='function')window.TakumiMathFractions.displayMath(e);};
+const renderMath=(e,cat)=>{if(cat==='math'&&e&&typeof window.TakumiMathFractions?.displayMath==='function')window.TakumiMathFractions.displayMath(e);};
 const num=s=>Number(String(s||'').replace(/[－−]/g,'-'));
 function explain(q,cat){
  const s=clean(q.q),answer=String(q.c?.[q.a]||''),raw=String(q.e||'');
@@ -66,32 +66,56 @@ function explain(q,cat){
    add('② 文字に数を代入するときは、掛け算を先に行い符号を確かめます。');
   }else add('式の意味を確認し、どの性質・公式を使うか説明してから答えを出します。');
  }else if(cat==='english'){
-  if(/三単現|一般動詞|疑問文|否定文/.test(q.u)){
-   add('① 主語が he・she・it など三人称単数で、現在の一般動詞の肯定文なら、基本形に -s/-es を付けます。');
-   add('② 疑問文・否定文は Does/does を使い、後ろの動詞は原形に戻します。I・you・複数主語なら Do/do を使います。');
-   add('③ 文中の時を表す語、主語、元の動詞を変えずに答えを作り、つづりを確認します。');
-  }else if(/進行形/.test(q.u)){
-   add('① 「今〜している」は be動詞＋動詞の-ing形です。');
-   add('② 主語に合わせ am/is/are を選び、疑問文ではbe動詞を主語の前に置きます。');
-  }else if(/過去形/.test(q.u)){
-   add('① 過去の肯定文では動詞を過去形にします。');
-   add('② 過去の疑問文・否定文は did/did not＋動詞の原形です。');
-  }else if(/未来/.test(q.u)){
-   add('① 未来を表す will＋動詞の原形、be going to＋動詞の原形を区別します。');
-   add('② 主語に合わせたbe動詞と、後ろの動詞の原形を確認します。');
-  }else if(/現在完了/.test(q.u)){
-   add('① 現在完了は have/has＋過去分詞です。主語が三人称単数ならhasです。');
-   add('② 経験・完了・継続のどの意味かを、文脈や副詞から判断します。');
-  }else if(/be動詞/.test(q.u)){
-   add('① am・is・are は主語と時制で選びます。');
-   add('② 疑問文ではbe動詞を主語の前に、否定文ではbe動詞の後ろにnotを置きます。');
-  }else if(/比較/.test(q.u)){
-   add('① 2つを比べる比較級と、3つ以上の中での最上級を区別します。');
-   add('② thanやthe、形容詞・副詞の形の変化を確認します。');
-  }else if(/英文読解/.test(q.u)){
-   add('① 先に設問で何を聞かれているか確認し、英文中の根拠となる主語・動詞・時の表現を探します。');
-   add('② 想像だけで選ばず、選択肢と本文の意味が一致するか確かめます。');
-  }else add('① 主語と動詞を先に見つけ、語順・時制・代名詞の形を確認します。');
+  // Prefer the actual tested sentence/answer over generic rules that may not fit.
+  const has=(re)=>re.test(s)||re.test(answer);
+  const u=String(q.u||'');
+  if(/現在進行形/.test(u)){
+   add('現在進行形は「主語＋am / is / are＋動詞の-ing形」で表します。');
+   add('疑問文はbe動詞を主語の前へ、否定文はbe動詞の後ろにnotを置きます。');
+  }else if(/過去形/.test(u)){
+   add('過去の肯定文では動詞の過去形を用います。不規則動詞は形を覚えます。');
+   add('過去の疑問文・否定文は「Did / did not＋主語など＋動詞の原形」の語順に注意します（主語とdidの位置は文型に従います）。');
+  }else if(/未来/.test(u)){
+   add('未来の表現は「will＋動詞の原形」または「am / is / are going to＋動詞の原形」です。');
+   add('主語に合わせてbe動詞を選び、willやgoing toの直後の動詞の形を確認しましょう。');
+  }else if(/現在完了/.test(u)){
+   add('現在完了の基本形は「have / has＋過去分詞」。主語がhe・she・itなど三人称単数ならhasを使います。');
+   if(/yesterday|last\s|ago/i.test(s))add('特定の過去の時点を表す語は通常、現在完了形ではなく過去形と一緒に使います。');
+   else add('経験・完了・継続のどれを表すかは、文脈や副詞から判断します。');
+  }else if(/be動詞/.test(u)){
+   add('be動詞は主語と時制に合わせて am / is / are（過去ならwas / wereなど）を選びます。');
+   add('be動詞の疑問文ではbe動詞を主語の前へ、否定文ではbe動詞の後ろにnotを置きます。');
+  }else if(/三単現|一般動詞|疑問文|否定文/.test(u)){
+   if(/三単現/.test(u)||has(/\b(does|doesn't|does not)\b/i)){
+    add('現在形で主語がhe・she・itなど三人称単数の場合、一般動詞の肯定文には原則として-s / -esを付けます。');
+    add('Does / doesn’tの後ろでは一般動詞を原形に戻します。例：He plays. → Does he play?');
+   }else if(has(/\b(do|don't|do not)\b/i)){
+    add('一般動詞の現在形の疑問文は「Do＋主語＋動詞の原形…?」、否定文は「主語＋do not＋動詞の原形…」が基本です。');
+    add('三人称単数主語ではDoの代わりにDoesを使い、後ろの一般動詞は原形にします。');
+   }else{
+    add('まず主語と動詞を確認し、現在形か過去形か、肯定文か疑問文・否定文かを見分けます。');
+    add('一般動詞の肯定文は主語に合わせて形を選びます。疑問文・否定文はdo / doesの有無と語順に注意します。');
+   }
+  }else if(/比較/.test(u)){
+   add('2つを比べる場合は比較級＋than、範囲内で最も〜と言う場合はthe＋最上級が基本です。');
+   add('good → better → bestのような不規則変化にも注意します。');
+  }else if(/英文読解/.test(u)){
+   add('設問を確認してから、英文中の主語・動詞・時を表す語など根拠を探します。');
+   add('推測だけで選ばず、正答と本文の意味が一致する場所を確かめます。');
+  }else if(/代名詞/.test(u)){
+   add('人やものが文の中で主語・目的語・所有者のどれを表すかを確認します。');
+   add('主格（I / heなど）・目的格（me / himなど）・所有格（my / hisなど）は働きが異なります。');
+  }else if(/前置詞/.test(u)){
+   add('曜日はon、時刻はat、月や年はinを基本に、場所の前置詞は位置関係から選びます。');
+  }else if(/並べ替え/.test(u)){
+   add('英語の基本語順「主語＋動詞＋必要な語句」を先に決め、疑問文か平叙文かを確かめます。');
+   add('答えの英文を一語ずつ読み、主語と動詞の一致、冠詞、時制を確認します。');
+  }else if(/English A|自己紹介|会話/.test(u)){
+   add('誰が誰に、何を伝える場面かを先に確かめます。');
+   add('語順だけでなく、尋ねる内容と答えの意味が合っているか確認します。');
+  }else{
+   add('問題の英文について、主語・動詞・時制・語順を確認します。');
+  }
  }else if(cat==='japanese'){
   if(/文法/.test(q.u)){
    add('① その語が文の中で何を修飾・説明しているかを調べます。');
@@ -145,8 +169,8 @@ function explain(q,cat){
 function addExplanation(target,q,cat,title){
  const e=explain(q,cat),card=say('div',undefined,'ts-explain-card');
  const h=say('strong',title||'解き方・なぜそうなる？');card.appendChild(h);
- const answer=say('p','正答：'+e.answer,'ts-explain-answer');card.appendChild(answer);renderMath(answer);
- const ol=say('ol');for(const x of e.steps){const li=say('li',x);ol.appendChild(li);renderMath(li)}card.appendChild(ol);
+ const answer=say('p','正答：'+e.answer,'ts-explain-answer');card.appendChild(answer);renderMath(answer,cat);
+ const ol=say('ol');for(const x of e.steps){const li=say('li',x.replace(/^[①②③④⑤⑥⑦⑧⑨⑩]\s*/u,''));ol.appendChild(li);renderMath(li,cat)}card.appendChild(ol);
  target.appendChild(card);return card;
 }
 function practiceFrom(q,cat){
@@ -165,9 +189,9 @@ function addPractice(target,q,cat){
  const other=practiceFrom(q,cat);if(!other)return;
  const box=say('div',undefined,'ts-practice');
  box.appendChild(say('strong','確認類題（解説を閉じて考える）'));
- const question=say('p',other.q);box.appendChild(question);renderMath(question);
+ const question=say('p',other.q);box.appendChild(question);renderMath(question,cat);
  const choose=say('div',undefined,'ts-review-options');
- for(const choice of other.c){const item=say('div','・'+choice);choose.appendChild(item);renderMath(item)}
+ for(const choice of other.c){const item=say('div','・'+choice);choose.appendChild(item);renderMath(item,cat)}
  box.appendChild(choose);
  const reveal=say('details');reveal.appendChild(say('summary','類題の正答・解説を見る'));
  addExplanation(reveal,other,cat,'類題の解説');
@@ -218,7 +242,7 @@ function reviewCard(row,i){
  if(!row.ok)details.open=true;
  const summary=say('summary',(row.ok?'○ ':'× ')+(i+1)+'. '+q.u+'｜'+q.q);
  details.appendChild(summary);
- const choice=say('p','本人の回答：'+row.selected+' ／ 正答：'+q.c[q.a]);details.appendChild(choice);renderMath(choice);
+ const choice=say('p','本人の回答：'+row.selected+' ／ 正答：'+q.c[q.a]);details.appendChild(choice);renderMath(choice,cat);
  addExplanation(details,q,cat,'理由と解き方');
  if(!row.ok)addPractice(details,q,cat);
  return details;
