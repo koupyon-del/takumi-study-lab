@@ -245,6 +245,12 @@ function reviewCard(row,i){
  const choice=say('p','本人の回答：'+row.selected+' ／ 正答：'+q.c[q.a]);details.appendChild(choice);renderMath(choice,cat);
  addExplanation(details,q,cat,'理由と解き方');
  if(!row.ok)addPractice(details,q,cat);
+ if(cat==='math'&&q.u==='連立方程式'){
+  const related=say('button',row.ok?'▶ この問題の関連授業を見る':'▶ 間違えた問題を板書で復習','secondary ts-review-lesson');
+  related.type='button';
+  related.onclick=()=>window.TakumiVideoLessons?.openForQuestion?.(q,'ts-review-screen');
+  details.appendChild(related);
+ }
  return details;
 }
 function drawReview(root,review){
@@ -289,7 +295,7 @@ for(const selector of ['#progress .qbox','#home']){
  if(selector==='#home'){const before=document.querySelector('#home .home-help');if(before)target.insertBefore(b,before);else target.appendChild(b)}else target.appendChild(b);
 }
 const style=document.createElement('style');
-style.textContent='.ts-explain-card{margin:12px 0;padding:12px;border-radius:10px;border:1px solid #dce3e6;background:#f7fafb;font-size:14px;line-height:1.75;white-space:normal}.ts-explain-card strong{display:block;font-size:14px}.ts-explain-card ol{padding-left:21px;margin:7px 0}.ts-explain-card li{margin:7px 0}.ts-explain-answer{font-weight:700;margin:8px 0}.ts-review-card{background:white;border:1px solid #ddd;border-radius:12px;margin:12px 0;padding:12px;overflow-wrap:anywhere}.ts-review-card summary{cursor:pointer;font-weight:750;line-height:1.5}.ts-review-card p{line-height:1.7}.ts-note{font-size:12px;color:#555;line-height:1.6}.ts-practice{border-top:1px solid #ccc;padding-top:13px}.ts-practice details{padding:9px;background:#fafafa;border-radius:8px}.ts-review-options{font-size:14px;line-height:1.75}.ts-review-history{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}.ts-review-history button{font-size:12px}.ts-review-history button.ts-selected{font-weight:900;border-color:#222}';
+style.textContent='.ts-review-lesson{display:block;width:100%;margin:12px 0 4px;font-weight:700}.ts-explain-card{margin:12px 0;padding:12px;border-radius:10px;border:1px solid #dce3e6;background:#f7fafb;font-size:14px;line-height:1.75;white-space:normal}.ts-explain-card strong{display:block;font-size:14px}.ts-explain-card ol{padding-left:21px;margin:7px 0}.ts-explain-card li{margin:7px 0}.ts-explain-answer{font-weight:700;margin:8px 0}.ts-review-card{background:white;border:1px solid #ddd;border-radius:12px;margin:12px 0;padding:12px;overflow-wrap:anywhere}.ts-review-card summary{cursor:pointer;font-weight:750;line-height:1.5}.ts-review-card p{line-height:1.7}.ts-note{font-size:12px;color:#555;line-height:1.6}.ts-practice{border-top:1px solid #ccc;padding-top:13px}.ts-practice details{padding:9px;background:#fafafa;border-radius:8px}.ts-review-options{font-size:14px;line-height:1.75}.ts-review-history{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}.ts-review-history button{font-size:12px}.ts-review-history button.ts-selected{font-weight:900;border-color:#222}';
 document.head.appendChild(style);
 window.TakumiExplanation={explain,openReview,mergeReviewRows};
 })();
