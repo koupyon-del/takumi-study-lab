@@ -4,7 +4,7 @@
  */
 (function(){
 'use strict';
-const pattern=/(?:\((?:[^()]*)\)|[+\-−]?(?:\d+(?:\.\d+)?[a-zA-Z]?|[a-zA-Z]\d*))\s*\/\s*(?:\((?:[^()]*)\)|(?:\d+(?:\.\d+)?|[a-zA-Z]\d*))/g;
+const pattern=/(?<![a-zA-Z])(?:\((?:[^()]*)\)|[+\-−]?(?:\d+(?:\.\d+)?[a-zA-Z]?|[a-zA-Z]\d*))\s*\/\s*(?:\((?:[^()]*)\)|(?:\d+(?:\.\d+)?|[a-zA-Z]\d*))(?![a-zA-Z])/g;
 const removeOuter=t=>t.startsWith('(')&&t.endsWith(')')?t.slice(1,-1):t;
 function tokenize(text){
  const src=String(text||''),out=[];
