@@ -177,24 +177,35 @@ show=function(id){
  }
  oldShow(id)
 };
-// Home: keep learning choices at the top, move rarely used configuration to collapsible panels.
+// Daily priority: show the adaptive tutoring menu first, without opening any fold.
+const cards=document.getElementById('cards');
+const focus=home.querySelector('.ts-focus');
+if(focus){
+ const intro=mk('p','毎日の学習はここから','ts-daily-lead');
+ const anchor=home.querySelector('.hero')||cards;
+ if(anchor){home.insertBefore(intro,anchor);home.insertBefore(focus,anchor)}
+ else home.append(intro,focus);
+}
+const header=mk('h3','教科別の通常練習','ts-deck-sectiontitle');
+if(cards)home.insertBefore(header,cards);
+const lesson=home.querySelector('.ts-video-home');
+if(lesson&&cards)cards.after(lesson);
+// Optional request decks belong below the everyday learning tools.
 const launchPanel=mk('section',null,'ts-deck-home');
-const title=mk('strong','🎯 集中練習をリクエスト');
-const intro=mk('p','教科・単元・難易度・問題数を選んで、その場限りのデッキを作成');
-const openButton=mk('button','リクエストデッキを作る','secondary');openButton.type='button';openButton.onclick=open;
+const title=mk('strong','🎯 必要なときだけ｜リクエストデッキ');
+const intro=mk('p','特定の単元を集中して解きたいときに、問題数や難易度を指定できます。');
+const openButton=mk('button','単元を指定して練習する','secondary');openButton.type='button';openButton.onclick=open;
 launchPanel.append(title,intro,openButton);
-const cards=document.getElementById('cards');if(cards)home.insertBefore(launchPanel,cards);else home.appendChild(launchPanel);
-const header=mk('h3','教科別の通常練習','ts-deck-sectiontitle');if(cards)home.insertBefore(header,cards);
+const optionalAnchor=lesson||cards;
+if(optionalAnchor)optionalAnchor.after(launchPanel);else home.appendChild(launchPanel);
+// Rarely used settings and reports remain collapsible, preserving the local fold state.
 const controls=mk('details',null,'ts-home-fold');controls.id='ts-home-courses';controls.appendChild(mk('summary','学習コース・進度設定を開く'));
 const studyPanel=home.querySelector('.study-panel');if(studyPanel)controls.appendChild(studyPanel);
-const summary=mk('details',null,'ts-home-fold');summary.id='ts-home-details';summary.appendChild(mk('summary','個別補習・進捗・管理メニューを開く'));
-const focus=home.querySelector('.ts-focus');if(focus)summary.appendChild(focus);
+const summary=mk('details',null,'ts-home-fold');summary.id='ts-home-details';summary.appendChild(mk('summary','進捗・記録・保護者メニューを開く'));
 const stats=home.querySelector('.stats');if(stats)summary.appendChild(stats);
 for(const actions of [...home.querySelectorAll(':scope > .actions')])summary.appendChild(actions);
 const help=home.querySelector('.home-help');if(help)summary.appendChild(help);
 home.append(controls,summary);
-const lesson=home.querySelector('.ts-video-home');
-if(lesson&&cards)cards.after(lesson);
 const storageKey='takumi-study-lab-layout-v1';
 try{
  const settings=JSON.parse(localStorage.getItem(storageKey)||'{}');
@@ -209,9 +220,11 @@ for(const [node,key] of [[controls,'courses'],[summary,'details']]){
  });
 }
 const css=`
-.ts-deck-home{margin:12px 0;padding:15px;background:#e9f2fa;border:1px solid #c7d8e7;border-radius:15px}
-.ts-deck-home strong{font-size:17px}.ts-deck-home p{font-size:13px;line-height:1.5;color:#4e6477}
-.ts-deck-home button{width:100%;font-weight:700;background:#fff}
+.ts-daily-lead{font-size:12px;font-weight:800;color:#45657e;margin:17px 2px 4px}
+#home>.ts-focus{margin:8px 0 16px;border-color:#b9cddc;box-shadow:0 2px 12px rgba(32,56,76,.055)}
+.ts-deck-home{margin:20px 0 12px;padding:13px 15px;background:#fff;border:1px solid #dce2e7;border-radius:14px}
+.ts-deck-home strong{font-size:14px}.ts-deck-home p{font-size:12px;line-height:1.5;color:#65717d;margin:8px 0}
+.ts-deck-home button{width:100%;font-weight:700;background:#f7f9fb}
 .ts-deck-sectiontitle{font-size:15px;margin:19px 1px 11px}
 .ts-home-fold{margin:12px 0;border:1px solid #dae1e7;background:#fff;border-radius:14px;padding:12px}
 .ts-home-fold>summary{font-weight:700;font-size:14px;padding:5px 2px;cursor:pointer}
@@ -236,5 +249,5 @@ const css=`
 @media(min-width:650px){.ts-deck-form{grid-template-columns:1fr 1fr}}
 `;
 document.head.appendChild(mk('style',css));
-window.TakumiRequestDeck={open,form,subjectPool,uniqueBank,eligibleCandidates,assembled,version:'2.2.0'};
+window.TakumiRequestDeck={open,form,subjectPool,uniqueBank,eligibleCandidates,assembled,version:'2.2.1'};
 })();
