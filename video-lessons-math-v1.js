@@ -200,6 +200,7 @@ function matchQuestion(q){
  if(!match){
   if(/分数|小数|分母|通分|÷|\/|[⅓½¼¾]/.test(s))match=['fraction',1];
   else if(/文章題|冊|本|代金|個数|人数|合計|速さ|濃度|買い物|何円/.test(s))match=['word',1];
+  else if(/【加減法】/.test(s))match=['add',1];
   else if(/分配|括弧|かっこ|符号|負の数|−2\(|-\s*2\(/.test(s))match=['sign',2];
   else if(/【連立・代入】|代入法|代入|y[=＝]/.test(s))match=['sub',1];
   else if(/係数|そろえ|同じ数倍|２倍|2倍|３倍|3倍/.test(s))match=['coef',1];
