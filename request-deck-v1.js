@@ -207,6 +207,12 @@ if(modeButtons)course.appendChild(modeButtons);
 if(cards)home.insertBefore(course,cards);else home.appendChild(course);
 const header=mk('h3','教科別の通常練習','ts-deck-sectiontitle');
 if(cards)home.insertBefore(header,cards);
+// Keep the existing review button and its click handler; relocate only its position.
+// The explanation module creates it before this module executes.
+const priorReview=[...home.querySelectorAll('button')].find(button=>
+ (button.textContent||'').includes('前回の解説・間違い直しを見る')
+);
+if(priorReview){priorReview.classList.add('ts-home-review-entry');home.insertBefore(priorReview,header);}
 const lesson=home.querySelector('.ts-video-home');
 if(lesson&&cards)cards.after(lesson);
 // Optional request decks belong below the everyday learning tools.
@@ -267,7 +273,8 @@ const css=`
 .ts-deck-home{margin:20px 0 12px;padding:13px 15px;background:#fff;border:1px solid #dce2e7;border-radius:14px}
 .ts-deck-home strong{font-size:14px}.ts-deck-home p{font-size:12px;line-height:1.5;color:#65717d;margin:8px 0}
 .ts-deck-home button{width:100%;font-weight:700;background:#f7f9fb}
-.ts-deck-sectiontitle{font-size:15px;margin:19px 1px 11px}
+.ts-deck-sectiontitle{font-size:15px;margin:11px 1px 11px}
+#home>.ts-home-review-entry{margin:16px 0 3px!important;min-height:44px;font-weight:700}
 .ts-home-fold{margin:12px 0;border:1px solid #dae1e7;background:#fff;border-radius:14px;padding:12px}
 .ts-home-fold>summary{font-weight:700;font-size:14px;padding:5px 2px;cursor:pointer}
 .ts-home-fold[open]>summary{margin-bottom:12px}
@@ -290,5 +297,5 @@ const css=`
 @media(min-width:650px){.ts-deck-form{grid-template-columns:1fr 1fr}}
 `;
 document.head.appendChild(mk('style',css));
-window.TakumiRequestDeck={open,form,subjectPool,uniqueBank,eligibleCandidates,assembled,version:'2.3.0'};
+window.TakumiRequestDeck={open,form,subjectPool,uniqueBank,eligibleCandidates,assembled,version:'2.3.1'};
 })();
