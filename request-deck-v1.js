@@ -223,7 +223,7 @@ const title=mk('strong','🎯 必要なときだけ｜リクエストデッキ')
 const intro=mk('p','特定の単元を集中して解きたいときに、問題数や難易度を指定できます。');
 const openButton=mk('button','単元を指定して練習する','secondary');openButton.type='button';openButton.onclick=open;
 launchPanel.append(title,intro,openButton);
-const optionalAnchor=englishLesson||lesson||cards;
+const optionalAnchor=home.querySelector('#ts-lesson-entrance')||englishLesson||lesson||cards;
 if(optionalAnchor)optionalAnchor.after(launchPanel);else home.appendChild(launchPanel);
 // Rarely used settings and reports remain collapsible, preserving the local fold state.
 const controls=mk('details',null,'ts-home-fold');controls.id='ts-home-courses';controls.appendChild(mk('summary','単元の進度・シラバス・出題設定を開く'));
