@@ -78,11 +78,11 @@ for(const revised of (window.TakumiLessonRewrites||[])){
 for(const quality of (window.TakumiExpandedLessonQuality||[])){
  const i=lessons.findIndex(l=>l.id===quality.id);
  if(i<0)throw Error('Lesson enhancement target missing: '+quality.id);
- const l=lessons[i];if(l.rewritten)throw Error('Already rewritten: '+quality.id);
- if(!quality.steps||quality.steps.length!==3||l.steps.length!==5)throw Error('Unsupported lesson structure: '+quality.id);
+ const l=lessons[i];if(l.qualityChecked)throw Error('Duplicate enhancement: '+quality.id);
+ if(!quality.steps||quality.steps.length!==3||!Array.isArray(l.steps)||l.steps.length<5)throw Error('Unsupported lesson structure: '+quality.id);
  const [concept,diagnostic,transfer]=quality.steps;
- l.steps=[l.steps[0],concept,l.steps[1],l.steps[2],diagnostic,l.steps[3],transfer,l.steps[4]];
- l.level='理由から学ぶ';l.minutes='約7〜10分';l.qualityChecked=true;
+ l.steps=[l.steps[0],concept,l.steps[1],l.steps[2],diagnostic,...l.steps.slice(3,-1),transfer,l.steps[l.steps.length-1]];
+ l.level='理由から学ぶ';l.minutes='約9〜12分';l.qualityChecked=true;
 }
 for(const l of lessons){
  if(!l.subject)l.subject='math';
@@ -410,12 +410,12 @@ function attachQuestionLink(target,q,source,wrong){
  return b;
 }
 const home=document.getElementById('home');
-if(home){
+if(home && !document.getElementById('ts-lesson-entrance')){
  const p=el('div',null,'ts-video-home');p.append(el('strong','✏️ 数学の対話型板書授業'),el('p','代数・連立・不等式・合同と証明。考えて選ぶ → 途中式を1行ずつ → 類題。音声は端末の読み上げ機能です。'));
  const b=el('button','▶ 授業一覧を開く','secondary');b.type='button';b.onclick=()=>openList('home');p.appendChild(b);
  const near=home.querySelector('.home-help');if(near)home.insertBefore(p,near);else home.appendChild(p)
 }
-if(home){
+if(home && !document.getElementById('ts-lesson-entrance')){
  const ep=el('div',null,'ts-video-home ts-english-home');ep.append(el('strong','📘 英語の対話型授業'),el('p','be動詞・一般動詞・三単現・疑問文・進行形・過去形・読解。選択→理由→一文で答える練習。'));
  const ebtn=el('button','▶ 英語の授業一覧を開く','secondary');ebtn.type='button';ebtn.onclick=()=>openList('home','english');ep.appendChild(ebtn);
  const math=home.querySelector('.ts-video-home');if(math)math.after(ep);else home.appendChild(ep);
@@ -484,5 +484,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,title:x.title,level:x.level,steps:x.steps.length})),version:'2.9.0'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked})),version:'2.9.2'};
 })();
