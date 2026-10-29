@@ -117,7 +117,7 @@ function speak(override){
   if(status)status.textContent='このブラウザに日本語音声の読み上げ機能がありません。端末のChromeで開くか、字幕で学習してください。';return false;
  }
  try{
-  const u=new window.SpeechSynthesisUtterance(text);u.lang='ja-JP';u.rate=.88;u.pitch=1;
+  const u=new window.SpeechSynthesisUtterance(text);u.lang='ja-JP';u.rate=Math.max(.65,Math.min(1.3,.88*speed));u.pitch=1;
   const voices=window.speechSynthesis.getVoices?.()||[];
   const ja=voices.find(v=>/^ja[-_]/i.test(v.lang))||voices.find(v=>v.lang==='ja-JP');
   if(ja)u.voice=ja;
@@ -182,10 +182,11 @@ screen.appendChild(el('p','まず考え方を聞き、選択してから板書�
  if(voiceMode){voiceMode=false;cancelAudio();voice.textContent='🔊 解説を音声で聞く';return}
  voiceMode=true;voice.textContent='🔇 読み上げを止める';speakPrompt();
 };
- const speedLabel=el('label','再生速度 ','ts-speed');const sel=el('select');sel.setAttribute('aria-label','再生速度');
+ const speedLabel=el('label','音声の速度 ','ts-speed');const sel=el('select');sel.setAttribute('aria-label','再生速度');
  for(const v of [.75,1,1.25,1.5]){const o=el('option',v+'倍');o.value=v;if(v===speed)o.selected=true;sel.appendChild(o)}
- sel.onchange=()=>{speed=Number(sel.value)||1;if(auto)tick()};speedLabel.appendChild(sel);
- controls.append(prev,next,play,voice,speedLabel);screen.appendChild(controls);
+ sel.onchange=()=>{speed=Number(sel.value)||1};speedLabel.appendChild(sel);
+ // Do not offer automatic text animation as a substitute for learning. Students must make decisions.
+ controls.append(prev,next,voice,speedLabel);screen.appendChild(controls);
 if(selected.subject==='english'){
  const en=el('button','🇬🇧 英文だけ発音','secondary ts-en-pronounce');en.type='button';en.onclick=()=>speakEnglish();
  screen.appendChild(en);
@@ -228,7 +229,7 @@ function speakEnglish(){
  if(!english){if(status)status.textContent='この場面には英文がありません。';return}
  try{
  if(!window.speechSynthesis||typeof window.SpeechSynthesisUtterance!=='function')throw Error('unsupported');
- const utterance=new window.SpeechSynthesisUtterance(english);utterance.lang='en-US';utterance.rate=.78;
+ const utterance=new window.SpeechSynthesisUtterance(english);utterance.lang='en-US';utterance.rate=Math.max(.62,Math.min(1.2,.78*speed));
  utterance.onerror=()=>{if(status)status.textContent='英語読み上げはこの端末で利用できません。'};
  spoken=utterance;window.speechSynthesis.speak(utterance);
  if(status)status.textContent='英語の例文を読み上げています。';
@@ -454,5 +455,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,title:x.title,level:x.level,steps:x.steps.length})),version:'2.6.0'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,title:x.title,level:x.level,steps:x.steps.length})),version:'2.6.1'};
 })();
