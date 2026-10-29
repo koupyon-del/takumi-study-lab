@@ -69,6 +69,12 @@ for(const l of (window.TakumiExtraEnglishLessons||[])){
  if(lessons.some(x=>x.id===l.id))throw Error('Duplicated lesson id '+l.id);
  lessons.push(l);
 }
+for(const revised of (window.TakumiLessonRewrites||[])){
+ const index=lessons.findIndex(l=>l.id===revised.id);
+ if(index<0)throw Error('Rewrite target missing: '+revised.id);
+ const current=lessons[index];
+ lessons[index]={...current,...revised,rewritten:true};
+}
 for(const l of lessons){
  if(!l.subject)l.subject='math';
  if(!l.group)l.group='連立方程式';
@@ -132,7 +138,7 @@ function speak(override){
 }
 function speakPrompt(){
  const st=selected?.steps[index];if(!st||!voiceMode)return;
- const prompt=window.TakumiTutorDecisions?.[selected.id]?.[index]?.prompt||
+ const prompt=selected?.steps[index]?.[4]?.[0]||window.TakumiTutorDecisions?.[selected.id]?.[index]?.prompt||
    thinkQuestions[selected.id]?.[index]||'次に何をするか考えてください。';
  speak(st[0]+'。'+prompt+'。まず自分で考えて、選択してください。');
 }
@@ -254,10 +260,13 @@ function paintStep(){
  }
  target.appendChild(board);
  const thought=el('div',null,'ts-think');
- const tutor=window.TakumiTutorDecisions?.[selected.id]?.[index];
+ const builtInQuiz=st[4];
+ const tutor=builtInQuiz?{prompt:builtInQuiz[0],options:builtInQuiz[1],correct:builtInQuiz[2],reason:builtInQuiz[3]}:
+   window.TakumiTutorDecisions?.[selected.id]?.[index];
  const prompt=tutor?.prompt||thinkQuestions[selected.id]?.[index]||'この次に何をすべきか、理由と一緒に予想しよう。';
  const reveal=el('button','考えたので、解説を開く','secondary');reveal.type='button';reveal.id='ts-reveal';
- reveal.onclick=()=>{revealStep();if(voiceMode)speak(st[0]+'。'+st[3])};
+ reveal.disabled=!!tutor&&decisionAnswers.get(index)===undefined;
+ reveal.onclick=()=>{if(reveal.disabled)return;revealStep();if(voiceMode)speak(st[0]+'。'+st[3])};
  thought.append(el('strong','✏️ まず自分で考える'),el('p',prompt));
  if(tutor){
   const options=el('div',null,'ts-decision-choices'),result=el('p','','ts-decision-feedback');
@@ -269,7 +278,7 @@ function paintStep(){
     decisionAnswers.set(index,j);for(const child of options.children)child.disabled=true;
     b.classList.add(j===tutor.correct?'ts-correct':'ts-incorrect');
     result.textContent=(j===tutor.correct?'その判断で正しいです。':'ここで考え直しましょう。')+(j===tutor.correct?tutor.reason:(tutor.wrong?.[j]||tutor.reason));
-    reveal.textContent='板書を一行ずつ開いて確かめる →';
+    reveal.textContent='板書を一行ずつ開いて確かめる →';reveal.disabled=false;
     if(voiceMode)speak(result.textContent);
    };options.appendChild(b);
   });
@@ -280,23 +289,7 @@ function paintStep(){
  thought.appendChild(reveal);target.appendChild(thought);
  const nextLine=el('button','次の式を1行ずつ表示 →','secondary ts-next-line');nextLine.id='ts-next-line';nextLine.type='button';nextLine.style.display='none';nextLine.onclick=()=>showNextLine();target.appendChild(nextLine);
  const explanation=el('p',st[2],'ts-explain ts-after-think');explanation.style.display='none';target.appendChild(explanation);
- if(st[4]){
-  const q=st[4],group=el('div',null,'ts-check');group.append(el('strong','ここで考えてみよう'),el('p',q[0]));
-  const buttons=el('div',null,'ts-check-options'),feedback=el('p',null,'ts-check-feedback'),record=answers.get(index);
-  q[1].forEach((txt,j)=>{
-   const b=el('button',txt,'secondary');b.type='button';
-   if(record!==undefined){b.disabled=true;if(j===q[2])b.classList.add('ts-correct');if(j===record&&j!==q[2])b.classList.add('ts-incorrect')}
-   b.onclick=()=>{
-    answers.set(index,j);
-    [...buttons.children].forEach((bb,k)=>{bb.disabled=true;if(k===q[2])bb.classList.add('ts-correct');if(k===j&&k!==q[2])bb.classList.add('ts-incorrect')});
-    feedback.textContent=(j===q[2]?'正解です。':'ここを確認。')+q[3];
-    if(auto){auto=false;if(timer!==null)clearTimeout(timer);timer=null;setAutoButton()}
-   };
-   buttons.appendChild(b)
-  });
-  if(record!==undefined)feedback.textContent=(record===q[2]?'正解です。':'ここを確認。')+q[3];
-  group.append(buttons,feedback);group.classList.add('ts-after-think');group.style.display='none';target.appendChild(group)
- }
+ // The embedded checkpoint appears before the explanation, not duplicated afterward.
  if(index===selected.steps.length-1){
   const p=el('div',null,'ts-practice');p.append(el('strong','仕上げ：解説を閉じて紙で解こう'),el('p',selected.practice[0]));
   const d=el('details');d.append(el('summary','ヒント・解答を確認'),el('p','ヒント：'+selected.practice[1]),el('p','解答：'+selected.practice[2]));p.appendChild(d);p.classList.add('ts-after-think');p.style.display='none';target.appendChild(p)
@@ -472,5 +465,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,title:x.title,level:x.level,steps:x.steps.length})),version:'2.7.0'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,title:x.title,level:x.level,steps:x.steps.length})),version:'2.8.0'};
 })();
