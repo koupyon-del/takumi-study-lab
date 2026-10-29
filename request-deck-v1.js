@@ -215,13 +215,15 @@ const priorReview=[...home.querySelectorAll('button')].find(button=>
 if(priorReview){priorReview.classList.add('ts-home-review-entry');home.insertBefore(priorReview,header);}
 const lesson=home.querySelector('.ts-video-home');
 if(lesson&&cards)cards.after(lesson);
+const englishLesson=home.querySelector('.ts-english-home');
+if(englishLesson&&(lesson||cards))(lesson||cards).after(englishLesson);
 // Optional request decks belong below the everyday learning tools.
 const launchPanel=mk('section',null,'ts-deck-home');
 const title=mk('strong','🎯 必要なときだけ｜リクエストデッキ');
 const intro=mk('p','特定の単元を集中して解きたいときに、問題数や難易度を指定できます。');
 const openButton=mk('button','単元を指定して練習する','secondary');openButton.type='button';openButton.onclick=open;
 launchPanel.append(title,intro,openButton);
-const optionalAnchor=lesson||cards;
+const optionalAnchor=englishLesson||lesson||cards;
 if(optionalAnchor)optionalAnchor.after(launchPanel);else home.appendChild(launchPanel);
 // Rarely used settings and reports remain collapsible, preserving the local fold state.
 const controls=mk('details',null,'ts-home-fold');controls.id='ts-home-courses';controls.appendChild(mk('summary','単元の進度・シラバス・出題設定を開く'));
@@ -297,5 +299,5 @@ const css=`
 @media(min-width:650px){.ts-deck-form{grid-template-columns:1fr 1fr}}
 `;
 document.head.appendChild(mk('style',css));
-window.TakumiRequestDeck={open,form,subjectPool,uniqueBank,eligibleCandidates,assembled,version:'2.3.1'};
+window.TakumiRequestDeck={open,form,subjectPool,uniqueBank,eligibleCandidates,assembled,version:'2.5.0'};
 })();
