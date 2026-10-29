@@ -75,6 +75,15 @@ for(const revised of (window.TakumiLessonRewrites||[])){
  const current=lessons[index];
  lessons[index]={...current,...revised,rewritten:true};
 }
+for(const quality of (window.TakumiExpandedLessonQuality||[])){
+ const i=lessons.findIndex(l=>l.id===quality.id);
+ if(i<0)throw Error('Lesson enhancement target missing: '+quality.id);
+ const l=lessons[i];if(l.rewritten)throw Error('Already rewritten: '+quality.id);
+ if(!quality.steps||quality.steps.length!==3||l.steps.length!==5)throw Error('Unsupported lesson structure: '+quality.id);
+ const [concept,diagnostic,transfer]=quality.steps;
+ l.steps=[l.steps[0],concept,l.steps[1],l.steps[2],diagnostic,l.steps[3],transfer,l.steps[4]];
+ l.level='理由から学ぶ';l.minutes='約7〜10分';l.qualityChecked=true;
+}
 for(const l of lessons){
  if(!l.subject)l.subject='math';
  if(!l.group)l.group='連立方程式';
@@ -261,7 +270,7 @@ function paintStep(){
  target.appendChild(board);
  const thought=el('div',null,'ts-think');
  const builtInQuiz=st[4];
- const tutor=builtInQuiz?{prompt:builtInQuiz[0],options:builtInQuiz[1],correct:builtInQuiz[2],reason:builtInQuiz[3]}:
+ const tutor=builtInQuiz?{prompt:builtInQuiz[0],options:builtInQuiz[1],correct:builtInQuiz[2],reason:builtInQuiz[3],wrong:builtInQuiz[4]}:
    window.TakumiTutorDecisions?.[selected.id]?.[index];
  const prompt=tutor?.prompt||thinkQuestions[selected.id]?.[index]||'この次に何をすべきか、理由と一緒に予想しよう。';
  const reveal=el('button','考えたので、解説を開く','secondary');reveal.type='button';reveal.id='ts-reveal';
@@ -273,12 +282,22 @@ function paintStep(){
   const prior=decisionAnswers.get(index);
   tutor.options.forEach((opt,j)=>{
    const b=el('button',opt,'secondary');b.type='button';
-   if(prior!==undefined){b.disabled=true;if(j===tutor.correct)b.classList.add('ts-correct');if(j===prior&&j!==tutor.correct)b.classList.add('ts-incorrect')}
+   if(prior!==undefined){b.disabled=true;if(j===tutor.correct)b.classList.add('ts-correct')}
    b.onclick=()=>{
-    decisionAnswers.set(index,j);for(const child of options.children)child.disabled=true;
-    b.classList.add(j===tutor.correct?'ts-correct':'ts-incorrect');
-    result.textContent=(j===tutor.correct?'その判断で正しいです。':'ここで考え直しましょう。')+(j===tutor.correct?tutor.reason:(tutor.wrong?.[j]||tutor.reason));
-    reveal.textContent='板書を一行ずつ開いて確かめる →';reveal.disabled=false;
+    const correct=j===tutor.correct;
+    result.textContent=(correct?'その判断で正しいです。':'どこが違うか考えてもう一度選びましょう。')+
+      (correct?tutor.reason:(tutor.wrong?.[j]||tutor.reason));
+    if(correct){
+      decisionAnswers.set(index,j);
+      for(const child of options.children)child.disabled=true;
+      b.classList.add('ts-correct');
+      reveal.textContent='板書を一行ずつ開いて確かめる →';reveal.disabled=false;
+    }else{
+      b.classList.add('ts-incorrect');b.disabled=true;
+      if([...options.children].every(el=>el.disabled)){
+        for(const child of options.children)if(!child.classList.contains('ts-incorrect'))child.disabled=false;
+      }
+    }
     if(voiceMode)speak(result.textContent);
    };options.appendChild(b);
   });
@@ -465,5 +484,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,title:x.title,level:x.level,steps:x.steps.length})),version:'2.8.0'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,title:x.title,level:x.level,steps:x.steps.length})),version:'2.9.0'};
 })();
