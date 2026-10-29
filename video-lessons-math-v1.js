@@ -90,6 +90,29 @@ for(const l of lessons){
  if(!l.steps||l.steps.length<4||!l.practice)throw Error('Invalid math lesson');
  for(const s of l.steps)if(!s[1].length||!s[2]||!s[3]||(s[4]&&(s[4][2]<0||s[4][2]>=s[4][1].length)))throw Error('Invalid slide');
 }
+// Explicit teacher review runs after all rewrites and enrichment are merged.
+const audited=window.TakumiLessonAuditPatches||{};
+for(const l of lessons){
+ const patch=audited[l.id];
+ if(patch){
+  if(patch.question)l.practice[0]=patch.question;
+  if(patch.hint)l.practice[1]=patch.hint;
+  if(patch.answer)l.practice[2]=patch.answer;
+  if(patch.worked){
+   if(!Array.isArray(patch.worked)||patch.worked.length<4||!Array.isArray(patch.worked[1]))throw Error('Invalid worked example '+l.id);
+   l.steps.splice(l.steps.length-2,0,patch.worked);
+  }
+ }
+ // The independent exercise comes last: never display its hint in advance.
+ const last=l.steps[l.steps.length-1];
+ last[1][0]=l.practice[0];
+ last[2]='まず紙で自力で解き、理由と途中式を残しましょう。行き詰まった場合だけ下の「ヒント・解答」を開いてください。';
+ last[3]='ここからは別問題です。解説は閉じ、考え方と途中式を自分で書いてから答え合わせをしてください。';
+ for(const s of l.steps){
+  s[2]=s[2].replaceAll('。。','。').replaceAll('式または英文の各部分を確かめます',l.subject==='math'?'等号・不等号と一行ごとの操作を確かめます':'主語・動詞・時と語順を確かめます');
+  s[3]=s[3].replaceAll('。。','。').replaceAll('式または英文の各部分を確かめます',l.subject==='math'?'式の各行を確かめます':'英文の各部分を確かめます');
+ }
+}
 const el=(tag,text,cls)=>{const x=document.createElement(tag);if(text!==undefined&&text!==null)x.textContent=String(text);if(cls)x.className=cls;return x};
 const screen=el('section',null,'screen ts-video-screen');screen.id='ts-video-screen';document.querySelector('.wrap').appendChild(screen);
 let selected=null,index=0,from='home',timer=null,auto=false,speed=1,answers=new Map(),decisionAnswers=new Map(),spoken=null,origin=null,catalogSubject='math',voiceMode=false;
@@ -484,5 +507,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked})),version:'2.9.2'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked})),version:'2.9.3'};
 })();
