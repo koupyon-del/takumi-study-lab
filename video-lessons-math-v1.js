@@ -69,6 +69,12 @@ for(const l of (window.TakumiExtraEnglishLessons||[])){
  if(lessons.some(x=>x.id===l.id))throw Error('Duplicated lesson id '+l.id);
  lessons.push(l);
 }
+// Overview courses are independent non-scored lessons; no quiz history is modified.
+for(const intro of (window.TakumiOverviewLessons||[])){
+ if(lessons.some(l=>l.id===intro.id))throw Error('Duplicate overview id '+intro.id);
+ if(!intro.overview||!intro.group||!intro.subject||intro.steps.length<10)throw Error('Invalid overview '+intro.id);
+ lessons.push(intro);
+}
 for(const revised of (window.TakumiLessonRewrites||[])){
  const index=lessons.findIndex(l=>l.id===revised.id);
  if(index<0)throw Error('Rewrite target missing: '+revised.id);
@@ -129,18 +135,18 @@ function openLesson(id,source,stage=0,sourceQuestion=null){
 function paintList(){
  screen.replaceChildren();
  const b=el('button','← 戻る','back');b.type='button';b.onclick=exit;
- screen.append(b,el('h2',catalogSubject==='english'?'英語｜考えて学ぶ文法授業':'数学｜考えて学ぶ板書授業'),el('p','各場面でまず自分で考え、解説を開いて確認します。端末が対応していれば音声読み上げも使えます。学習記録の正答数には加算しません。','ts-note'));
+ screen.append(b,el('h2',catalogSubject==='english'?'英語｜考えて学ぶ文法授業':'数学｜考えて学ぶ板書授業'),el('p','📚 はじめての単元は「総合授業」から。基本の意味→理由→板書例→間違いの原因→自力問題を学び、次に個別授業へ進みます。端末の読み上げに対応。授業視聴は正答率に加算しません。','ts-note'));
  const groups=catalogSubject==='english'?['be動詞','一般動詞','三単現','疑問文・否定文','現在進行形','過去形','英文読解・記述']:['一次不等式','代数の基礎','連立方程式','図形・合同・証明'];
  for(const group of groups){
-  const subset=lessons.filter(l=>l.subject===catalogSubject&&l.group===group);
+  const subset=lessons.filter(l=>l.subject===catalogSubject&&l.group===group).sort((a,b)=>Number(!!b.overview)-Number(!!a.overview));
   if(!subset.length)continue;
   const fold=el('details',null,'ts-lesson-group');fold.open=group===(catalogSubject==='english'?'一般動詞':'一次不等式');
-  const heading=el('summary',group+'（'+subset.length+'講座）','ts-lesson-group-title');
+  const heading=el('summary',group+'（総合1＋個別'+(subset.length-1)+'講座）','ts-lesson-group-title');
   fold.appendChild(heading);
   const grid=el('div',null,'ts-vgrid');
   for(const l of subset){
-   const btn=el('button',null,'ts-vcard');btn.type='button';
-   btn.append(el('span',l.level+'・'+l.minutes,'ts-level'),el('strong',l.title),el('small',l.subtitle));
+   const btn=el('button',null,'ts-vcard'+(l.overview?' ts-overview-card':''));btn.type='button';
+   btn.append(el('span',(l.overview?'📚 まずはここから｜':'')+l.level+'・'+l.minutes,'ts-level'),el('strong',l.title),el('small',l.subtitle));
    btn.onclick=()=>openLesson(l.id,from);grid.appendChild(btn);
   }
   fold.appendChild(grid);screen.appendChild(fold);
@@ -194,6 +200,19 @@ function paintPlayer(){
  screen.replaceChildren();
  const back=el('button','← 授業一覧','back');back.type='button';back.onclick=()=>{stop();paintList()};
  screen.append(back,el('h2',selected.title),el('p',selected.level+'｜'+selected.subtitle+'｜'+selected.minutes,'ts-note'));
+ if(selected.overview){
+  const guide=el('div',null,'ts-overview-guide');
+  guide.append(el('strong','📚 単元の総合授業'),el('p','基本の意味・理由・板書例・間違いやすい点・自力問題を一通り教えます。長ければ分けて学び、目次から気になる場面を復習できます。'));
+  const toc=el('details',null,'ts-overview-chapters');
+  toc.appendChild(el('summary','目次を見る・場面を選んで学ぶ'));
+  const nav=el('div',null,'ts-overview-chapter-list');
+  selected.steps.forEach((s,i)=>{
+   const jump=el('button',(i+1)+'. '+s[0],'secondary');jump.type='button';
+   jump.onclick=()=>{stop();index=i;answers=new Map();decisionAnswers=new Map();paintStep();toc.open=false};
+   nav.appendChild(jump);
+  });
+  toc.appendChild(nav);guide.appendChild(toc);screen.appendChild(guide);
+ }
  if(origin){
   const context=el('div',null,'ts-question-bridge');
   context.append(el('strong','いま解いた問題に関連する授業です'),el('p',origin.q));
@@ -466,6 +485,14 @@ const css=`
 .ts-note{font-size:12px;color:#5c6d7f;line-height:1.7}.ts-vgrid{display:grid;grid-template-columns:1fr;gap:12px}
 .ts-vcard{display:flex;flex-direction:column;gap:8px;border:1px solid #d8e2ed;background:white;padding:16px;text-align:left;border-radius:15px}
 .ts-vcard strong{font-size:17px}.ts-vcard small{color:#65727f;font-size:12px}.ts-level{font-size:12px;font-weight:800;color:#416983}
+.ts-overview-card{border:2px solid #6e9cb5;background:#eaf4fa;box-shadow:0 2px 6px #132f400d}
+.ts-overview-card strong{font-size:18px}.ts-overview-card .ts-level{color:#194b6c}
+.ts-overview-guide{background:#eaf4fa;border:1px solid #c2d9e7;border-radius:14px;padding:14px;margin:12px 0}
+.ts-overview-guide p{font-size:13px;line-height:1.75;color:#34566c}
+.ts-overview-chapters{margin-top:10px;background:white;border-radius:10px;padding:12px;border:1px solid #bdd0df}
+.ts-overview-chapters summary{font-weight:750;cursor:pointer;line-height:1.65}
+.ts-overview-chapter-list{display:grid;grid-template-columns:1fr;gap:7px;margin-top:12px;max-height:270px;overflow-y:auto}
+.ts-overview-chapter-list button{text-align:left;padding:10px 12px;font-size:13px;min-height:42px;line-height:1.4}
 .ts-progress{height:8px;border-radius:99px;overflow:hidden;background:#dce6ef;margin-top:17px}
 .ts-progress-bar{height:100%;background:#438d96;transition:width .35s}.ts-count{text-align:right;margin:5px 0 12px}
 .ts-vstage{background:white;border:1px solid #d8e2ed;border-radius:15px;padding:13px}
@@ -507,5 +534,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked})),version:'2.9.3'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked,overview:!!x.overview})),version:'3.0.0'};
 })();
