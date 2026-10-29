@@ -245,7 +245,7 @@ function reviewCard(row,i){
  const choice=say('p','本人の回答：'+row.selected+' ／ 正答：'+q.c[q.a]);details.appendChild(choice);renderMath(choice,cat);
  addExplanation(details,q,cat,'理由と解き方');
  if(!row.ok)addPractice(details,q,cat);
- if(cat==='math'&&window.TakumiVideoLessons?.matchQuestion?.(q)){
+ if((cat==='math'||cat==='english')&&window.TakumiVideoLessons?.matchQuestion?.(q)){
   const related=say('button',row.ok?'▶ この問題の関連授業を見る':'▶ 間違えた問題を板書で復習','secondary ts-review-lesson');
   related.type='button';
   related.onclick=()=>window.TakumiVideoLessons?.openForQuestion?.(q,'ts-review-screen');
