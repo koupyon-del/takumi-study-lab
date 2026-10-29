@@ -112,12 +112,13 @@ function speak(){
  const st=selected?.steps[index],status=document.getElementById('ts-audio-status');if(!st)return;
  cancelAudio();
  if(typeof window.SpeechSynthesisUtterance!=='function'||!window.speechSynthesis){
-  if(status)status.textContent='音声を利用できない端末です。字幕を確認してください。';return
+  voiceMode=false;const btn=document.getElementById('ts-voice-btn');if(btn)btn.textContent='🔊 解説を音声で聞く';
+  if(status)status.textContent='この端末・ブラウザでは読み上げが利用できません。板書と解説文を確認してください。';return
  }
  try{
   const u=new window.SpeechSynthesisUtterance(st[0]+'。'+st[3]);u.lang='ja-JP';u.rate=.89;
   u.onend=()=>{if(status)status.textContent='読み上げが終了しました'};
-  u.onerror=()=>{voiceMode=false;const b=document.getElementById('ts-voice-btn');if(b)b.textContent='🔊 音声授業を始める';if(status)status.textContent='端末が読み上げを拒否しました。ブラウザの音声設定を確認してください。'};
+  u.onerror=()=>{voiceMode=false;const b=document.getElementById('ts-voice-btn');if(b)b.textContent='🔊 解説を音声で聞く';if(status)status.textContent='端末が読み上げを拒否しました。ブラウザの音声設定を確認してください。'};
   spoken=u;window.speechSynthesis.speak(u);if(status)status.textContent='読み上げ中…';
  }catch(e){if(status)status.textContent='音声が利用できません。字幕は表示されています。'}
 }
@@ -155,9 +156,9 @@ function paintPlayer(){
  const prev=el('button','← 前へ','secondary');prev.type='button';prev.id='ts-vprev';prev.onclick=()=>changeStep(-1);
  const next=el('button','次へ →','secondary');next.type='button';next.id='ts-vnext';next.onclick=()=>changeStep(1);
  const play=el('button','▶ 板書を自動再生','secondary');play.type='button';play.id='ts-autobtn';play.onclick=toggleAuto;
- const voice=el('button','🔊 音声授業を始める','secondary');voice.type='button';voice.id='ts-voice-btn';voice.onclick=()=>{
- if(voiceMode){voiceMode=false;cancelAudio();voice.textContent='🔊 音声授業を始める';return}
- voiceMode=true;voice.textContent='🔇 音声授業を止める';revealStep();speak();
+ const voice=el('button','🔊 解説を音声で聞く','secondary');voice.type='button';voice.id='ts-voice-btn';voice.onclick=()=>{
+ if(voiceMode){voiceMode=false;cancelAudio();voice.textContent='🔊 解説を音声で聞く';return}
+ voiceMode=true;voice.textContent='🔇 読み上げを止める';revealStep();speak();
 };
  const speedLabel=el('label','再生速度 ','ts-speed');const sel=el('select');sel.setAttribute('aria-label','再生速度');
  for(const v of [.75,1,1.25,1.5]){const o=el('option',v+'倍');o.value=v;if(v===speed)o.selected=true;sel.appendChild(o)}
@@ -167,7 +168,7 @@ if(selected.subject==='english'){
  const en=el('button','🇬🇧 英文だけ発音','secondary ts-en-pronounce');en.type='button';en.onclick=()=>speakEnglish();
  screen.appendChild(en);
 }
- const audio=el('p','音声は録音ではなく端末の読み上げ機能です。「音声授業を始める」を押してください。機種やブラウザによっては音声が使えません。','ts-note');audio.id='ts-audio-status';
+ const audio=el('p','音声は録音ではなく端末の読み上げ機能です。「解説を音声で聞く」を押してください。機種やブラウザによっては音声が使えません。','ts-note');audio.id='ts-audio-status';
  const autoStatus=el('p','','ts-note');autoStatus.id='ts-auto-status';
  screen.append(audio,autoStatus,el('p','※ 録画された映像授業ではありません。考える→解説を見る→確認する形式の学習画面です。視聴は正答率に加算しません。','ts-note'));
  paintStep();
@@ -241,7 +242,7 @@ function paintStep(){
  const ct=document.getElementById('ts-stage-count');if(ct)ct.textContent='場面 '+(index+1)+' / '+selected.steps.length;
  const prev=document.getElementById('ts-vprev');if(prev)prev.disabled=index===0;
  const next=document.getElementById('ts-vnext');if(next){next.textContent=index===selected.steps.length-1?'授業一覧へ':'次へ →';next.disabled=true}
- const status=document.getElementById('ts-audio-status');if(status)status.textContent=voiceMode?'「解説を開く」で音声が再生されます。':'端末が対応していれば「音声授業を始める」で読み上げます。';
+ const status=document.getElementById('ts-audio-status');if(status)status.textContent=voiceMode?'「解説を開く」で音声が再生されます。':'端末が対応していれば「解説を音声で聞く」で読み上げます。';
  const autoStatus=document.getElementById('ts-auto-status');if(autoStatus)autoStatus.textContent='';
  setAutoButton();if(auto){revealStep();tick()}
 }
@@ -383,5 +384,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,title:x.title,level:x.level,steps:x.steps.length})),version:'2.5.0'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,title:x.title,level:x.level,steps:x.steps.length})),version:'2.5.1'};
 })();
