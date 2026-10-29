@@ -1,0 +1,18 @@
+/* Original six math lessons rewritten: teach the selection, operation, calculation and checking. */
+(function(){'use strict';
+const rows=[{"id":"add","title":"加減法①｜足して文字を消す意味","question":"x＋y＝13、x−y＝5","focus":"yの係数は＋1と−1。足すとyが0になるので文字を1つ減らせる。","choice":["2式を足す","2式を引く","xだけ消す"],"correct":0,"action":"(x＋y)＋(x−y)＝13＋5","equation":"2x＝18 → x＝9","other":"9＋y＝13 → y＝4","check":"9＋4＝13、9−4＝5","trap":"式の左辺と右辺を両方足す。xだけ求めて終わらない。","practice":["x＋y＝17、x−y＝3","＋yと−yを足す","2x＝20→x＝10、y＝7。両式で検算。"]},{"id":"coef","title":"加減法②｜何倍すれば消せるか","question":"2x＋y＝14、x＋2y＝13","focus":"yの係数が1と2。上の式全体を2倍すると＋2y同士になり、引いて消せる。","choice":["①だけ左辺を2倍","①の左右すべてを2倍","②だけ右辺を2倍"],"correct":1,"action":"①×2：4x＋2y＝28。②との差を取る","equation":"3x＝15 → x＝5","other":"2×5＋y＝14 → y＝4","check":"2×5＋4＝14、5＋2×4＝13","trap":"2x、y、14の全部を2倍する。右辺を忘れない。","practice":["2x＋y＝19、x＋2y＝17","①を2倍して②を引く","3x＝21→x＝7、y＝5。"]},{"id":"sub","title":"代入法｜なぜ式ごと置き換える？","question":"y＝2x−3、x＋y＝9","focus":"yと2x−3は等しい。だからyの位置に(2x−3)を丸ごと入れられる。","choice":["x＋2x＝9","x＋(2x−3)＝9","x＋(2x＋3)＝9"],"correct":1,"action":"x＋(2x−3)＝9","equation":"3x−3＝9 → x＝4","other":"y＝2×4−3＝5","check":"5＝2×4−3、4＋5＝9","trap":"代入時の−3を落とさず、括弧を残してから計算。","practice":["y＝3x−2、x＋y＝18","x＋(3x−2)＝18","4x＝20→x＝5、y＝13。"]},{"id":"sign","title":"符号と括弧｜−2(6−x)の意味","question":"x＋y＝6、3x−2y＝8","focus":"y＝6−xを代入するが、元は−2y。−2を括弧全体へ掛ける。","choice":["3x−2(6−x)＝8","3x−(6−x)＝8","3x＋2(6−x)＝8"],"correct":0,"action":"3x−2(6−x)＝8 → 3x−12＋2x＝8","equation":"5x＝20 → x＝4","other":"y＝6−4＝2","check":"4＋2＝6、3×4−2×2＝8","trap":"−2×(−x)＝＋2x。符号を変える場所を指で確認。","practice":["x＋y＝7、3x−2y＝11","y＝7−xを代入する","5x＝25→x＝5、y＝2。"]},{"id":"word","title":"文章題｜個数と金額を分ける","question":"ノート180円、ペン90円、合計7個で900円","focus":"ノートn冊、ペンp本と決める。個数n＋p＝7と、金額180n＋90p＝900の2条件。","choice":["n＋p＝7","180n＋90p＝7","n＋p＝900"],"correct":0,"action":"180n＋90p＝900 → 2n＋p＝10","equation":"(2n＋p)−(n＋p)＝10−7 → n＝3","other":"n＋p＝7 → p＝4","check":"3＋4＝7、180×3＋90×4＝900","trap":"文字は個数を表す。金額は単価×個数、単位を付けて回答。","practice":["同じ品を合計8個、990円で買う。各何個？","n＋p＝8、2n＋p＝11","n＝3冊、p＝5本。"]},{"id":"fraction","title":"分数の連立｜分母を払うのはなぜ","question":"x/2＋y/3＝3、x−y＝1","focus":"分母2と3の最小公倍数6を全項に掛ける。等号を保ったまま整数の係数へ変える。","choice":["3x＋2y＝18","3x＋2y＝3","6x＋6y＝18"],"correct":0,"action":"6×(x/2)＋6×(y/3)＝6×3 → 3x＋2y＝18","equation":"x−y＝1を2倍して2x−2y＝2。足して5x＝20 → x＝4","other":"x−y＝1 → y＝3","check":"4/2＋3/3＝3、4−3＝1","trap":"掛けるのは全項。検算は元の分母のある式で行う。","practice":["x/3＋y/2＝4、x−y＝2","①×6、②×3でyを消す","5x＝30→x＝6、y＝4。"]}];
+const lessons=rows.map(r=>{
+ const Q=(question,options,correct,reason)=>[question,options,correct,reason];
+ const S=(title,board,why,voice,quiz)=>[title,board,why,voice,...(quiz?[quiz]:[])];
+ const steps=[
+ S('問題の意味をつかむ',[r.question,'目標：理由を説明し、答えを検算'],r.focus,'式を読み、何を求めるか確認してください。'+r.focus),
+ S('操作を選ぶ理由を考える',[r.question,'★ '+r.focus],r.focus,'答えを見る前に、次の操作を選んでください。',Q('最初に正しい判断はどれ？',r.choice,r.correct,r.focus)),
+ S('途中式を省略せず確認',[r.action,'★ '+r.equation],r.focus+'。その操作をすれば '+r.equation+' となります。','式全体をどのように変えたか、声に出して説明してください。'+r.action),
+ S('もう一方の文字まで求める',[r.equation,'★ '+r.other],r.other+'。値が1つ出ただけで終わらないこと。','元の条件に戻り、もう一方も求めます。'+r.other,Q('ここで次に必要なのは？',['もう一方の値を求める','ここで答えを終える'],0,'2つの未知数を最後まで求めます。')),
+ S('検算と失敗の原因を確認',[r.check,'注意：'+r.trap],r.trap+'。最初の両方の条件へ値を入れて確かめる。','最後に検算し、失敗しやすい操作を確認しましょう。'+r.trap),
+ S('自分だけで別問題を解く',[r.practice[0],'途中式・操作の理由・検算を書く'],r.practice[1]+'。解説を閉じて取り組みましょう。','ここからは数字を変えた別問題です。ひとりで解けるか試しましょう。')
+ ];
+ return {id:r.id,subject:'math',group:'連立方程式',title:r.title,subtitle:r.focus,minutes:'約6〜9分',level:'判断と理由',steps,practice:r.practice};
+});
+window.TakumiLessonRewrites=(window.TakumiLessonRewrites||[]).concat(lessons);
+})();
