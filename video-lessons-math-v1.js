@@ -65,33 +65,38 @@ for(const next of (window.TakumiExtraMathLessons||[])){
  if(lessons.some(l=>l.id===next.id))throw Error('Duplicated lesson id '+next.id);
  lessons.push(next);
 }
+for(const l of (window.TakumiExtraEnglishLessons||[])){
+ if(lessons.some(x=>x.id===l.id))throw Error('Duplicated lesson id '+l.id);
+ lessons.push(l);
+}
 for(const l of lessons){
+ if(!l.subject)l.subject='math';
  if(!l.group)l.group='連立方程式';
  if(!l.steps||l.steps.length<4||!l.practice)throw Error('Invalid math lesson');
  for(const s of l.steps)if(!s[1].length||!s[2]||!s[3]||(s[4]&&(s[4][2]<0||s[4][2]>=s[4][1].length)))throw Error('Invalid slide');
 }
 const el=(tag,text,cls)=>{const x=document.createElement(tag);if(text!==undefined&&text!==null)x.textContent=String(text);if(cls)x.className=cls;return x};
 const screen=el('section',null,'screen ts-video-screen');screen.id='ts-video-screen';document.querySelector('.wrap').appendChild(screen);
-let selected=null,index=0,from='home',timer=null,auto=false,speed=1,answers=new Map(),spoken=null,origin=null;
+let selected=null,index=0,from='home',timer=null,auto=false,speed=1,answers=new Map(),spoken=null,origin=null,catalogSubject='math',voiceMode=false;
 function cancelAudio(){try{window.speechSynthesis?.cancel()}catch(e){}spoken=null}
-function stop(){if(timer!==null)clearTimeout(timer);timer=null;auto=false;cancelAudio()}
+function stop(){if(timer!==null)clearTimeout(timer);timer=null;auto=false;voiceMode=false;cancelAudio()}
 const priorShow=show;show=function(id){if(id!==screen.id)stop();priorShow(id)};
 function exit(){stop();selected=null;show(from)}
-function openList(source){stop();selected=null;origin=null;from=source||from;paintList();show(screen.id)}
+function openList(source,subject='math'){stop();selected=null;origin=null;from=source||from;catalogSubject=subject==='english'?'english':'math';paintList();show(screen.id)}
 function openLesson(id,source,stage=0,sourceQuestion=null){
- stop();selected=lessons.find(x=>x.id===id)||lessons[0];from=source||from;
+ stop();selected=lessons.find(x=>x.id===id)||lessons[0];catalogSubject=selected.subject;from=source||from;
  index=Math.max(0,Math.min(selected.steps.length-1,Math.floor(Number(stage)||0)));
  origin=sourceQuestion;answers=new Map();paintPlayer();show(screen.id)
 }
 function paintList(){
  screen.replaceChildren();
  const b=el('button','← 戻る','back');b.type='button';b.onclick=exit;
- screen.append(b,el('h2','数学｜動く板書授業'),el('p','解法を短い授業に分けました。音声は任意で再生できます。視聴や確認問題を自力正答率に加算しません。','ts-note'));
- const groups=['一次不等式','代数の基礎','連立方程式'];
+ screen.append(b,el('h2',catalogSubject==='english'?'英語｜考えて学ぶ文法授業':'数学｜考えて学ぶ板書授業'),el('p','各場面でまず自分で考え、解説を開いて確認します。端末が対応していれば音声読み上げも使えます。学習記録の正答数には加算しません。','ts-note'));
+ const groups=catalogSubject==='english'?['一般動詞','三単現','疑問文・否定文','英文読解・記述']:['一次不等式','代数の基礎','連立方程式'];
  for(const group of groups){
-  const subset=lessons.filter(l=>l.group===group);
+  const subset=lessons.filter(l=>l.subject===catalogSubject&&l.group===group);
   if(!subset.length)continue;
-  const fold=el('details',null,'ts-lesson-group');fold.open=group==='一次不等式';
+  const fold=el('details',null,'ts-lesson-group');fold.open=group===(catalogSubject==='english'?'一般動詞':'一次不等式');
   const heading=el('summary',group+'（'+subset.length+'講座）','ts-lesson-group-title');
   fold.appendChild(heading);
   const grid=el('div',null,'ts-vgrid');
@@ -110,9 +115,9 @@ function speak(){
   if(status)status.textContent='音声を利用できない端末です。字幕を確認してください。';return
  }
  try{
-  const u=new window.SpeechSynthesisUtterance(st[3]);u.lang='ja-JP';u.rate=.92;
+  const u=new window.SpeechSynthesisUtterance(st[0]+'。'+st[3]);u.lang='ja-JP';u.rate=.89;
   u.onend=()=>{if(status)status.textContent='読み上げが終了しました'};
-  u.onerror=()=>{if(status)status.textContent='端末で音声を再生できません。字幕は表示されています。'};
+  u.onerror=()=>{voiceMode=false;const b=document.getElementById('ts-voice-btn');if(b)b.textContent='🔊 音声授業を始める';if(status)status.textContent='端末が読み上げを拒否しました。ブラウザの音声設定を確認してください。'};
   spoken=u;window.speechSynthesis.speak(u);if(status)status.textContent='読み上げ中…';
  }catch(e){if(status)status.textContent='音声が利用できません。字幕は表示されています。'}
 }
@@ -150,26 +155,67 @@ function paintPlayer(){
  const prev=el('button','← 前へ','secondary');prev.type='button';prev.id='ts-vprev';prev.onclick=()=>changeStep(-1);
  const next=el('button','次へ →','secondary');next.type='button';next.id='ts-vnext';next.onclick=()=>changeStep(1);
  const play=el('button','▶ 板書を自動再生','secondary');play.type='button';play.id='ts-autobtn';play.onclick=toggleAuto;
- const voice=el('button','🔊 場面を読み上げ','secondary');voice.type='button';voice.onclick=speak;
+ const voice=el('button','🔊 音声授業を始める','secondary');voice.type='button';voice.id='ts-voice-btn';voice.onclick=()=>{
+ if(voiceMode){voiceMode=false;cancelAudio();voice.textContent='🔊 音声授業を始める';return}
+ voiceMode=true;voice.textContent='🔇 音声授業を止める';revealStep();speak();
+};
  const speedLabel=el('label','再生速度 ','ts-speed');const sel=el('select');sel.setAttribute('aria-label','再生速度');
  for(const v of [.75,1,1.25,1.5]){const o=el('option',v+'倍');o.value=v;if(v===speed)o.selected=true;sel.appendChild(o)}
  sel.onchange=()=>{speed=Number(sel.value)||1;if(auto)tick()};speedLabel.appendChild(sel);
  controls.append(prev,next,play,voice,speedLabel);screen.appendChild(controls);
- const audio=el('p','音声の読み上げは端末の機能を使用します。文字の説明はいつでも読めます。','ts-note');audio.id='ts-audio-status';
+if(selected.subject==='english'){
+ const en=el('button','🇬🇧 英文だけ発音','secondary ts-en-pronounce');en.type='button';en.onclick=()=>speakEnglish();
+ screen.appendChild(en);
+}
+ const audio=el('p','音声は録音ではなく端末の読み上げ機能です。「音声授業を始める」を押してください。機種やブラウザによっては音声が使えません。','ts-note');audio.id='ts-audio-status';
  const autoStatus=el('p','','ts-note');autoStatus.id='ts-auto-status';
- screen.append(audio,autoStatus,el('p','※ 動画ファイルではなく、数式が順番に現れる「動く板書」です。確認問題や視聴は学力評価へ加算しません。','ts-note'));
+ screen.append(audio,autoStatus,el('p','※ 録画された映像授業ではありません。考える→解説を見る→確認する形式の学習画面です。視聴は正答率に加算しません。','ts-note'));
  paintStep();
 }
+function revealStep(){
+ const stage=document.getElementById('ts-vstage');if(!stage)return;
+ for(const el of stage.querySelectorAll('.ts-after-think'))el.style.display='';
+ const prompt=stage.querySelector('.ts-think');if(prompt)prompt.style.display='none';
+ const guide=stage.querySelector('.ts-think-result');if(guide)guide.style.display='';
+ const next=document.getElementById('ts-vnext');if(next)next.disabled=false;
+}
+function speakEnglish(){
+ const st=selected?.steps[index],status=document.getElementById('ts-audio-status');if(!st)return;
+ const english=st[1].filter(x=>/[A-Za-z]{2,}/.test(x)).join('. ').replace(/[★✓①②]/g,'');
+ cancelAudio();
+ if(!english){if(status)status.textContent='この場面には英文がありません。';return}
+ try{
+ if(!window.speechSynthesis||typeof window.SpeechSynthesisUtterance!=='function')throw Error('unsupported');
+ const utterance=new window.SpeechSynthesisUtterance(english);utterance.lang='en-US';utterance.rate=.78;
+ utterance.onerror=()=>{if(status)status.textContent='英語読み上げはこの端末で利用できません。'};
+ spoken=utterance;window.speechSynthesis.speak(utterance);
+ if(status)status.textContent='英語の例文を読み上げています。';
+ }catch(e){if(status)status.textContent='英語読み上げはこの端末で利用できません。'}
+}
+const thinkQuestions={
+ coef:['どの文字を消せばよいだろう？','①を何倍すれば係数がそろう？','式を引くと何が消える？','残った文字をどう求める？','元の2本で確かめた？'],
+ sub:['どの式なら文字を置き換えやすい？','yの代わりにどの式を入れる？','同類項はどうまとめる？','もう一方の文字を求めた？','2本とも成立する？'],
+ 'en-third':['この主語はhe、she、itのどれ？','三単現では何を付ける？','watchの語尾に注意すると？','studyとplayはどう違う？','主語が複数なら？'],
+ 'en-question':['主語は三人称単数？','Doesの後の動詞は何形？','複数主語なら？','否定文の語順は？','付け足す情報を省いていない？'],
+ 'en-why':['Whyは何を尋ねている？','理由を示す語句は？','Becauseの後に何が必要？','代名詞は誰を指す？','本文にない理由を付けていない？']
+};
 function paintStep(){
  if(!selected)return;const st=selected.steps[index],target=document.getElementById('ts-vstage');if(!target)return;
  if(timer!==null)clearTimeout(timer);timer=null;target.replaceChildren();
  target.appendChild(el('h3',st[0]));
  const board=el('div',null,'ts-blackboard');
- for(const line of st[1]){
+ for(const [j,line] of st[1].entries()){
   const special=line.startsWith('★'),good=line.startsWith('✓');
-  board.appendChild(el('div',special?line.slice(2):line,'ts-formula'+(special?' ts-highlight':good?' ts-good':'')))
+  const item=el('div',special?line.slice(2):line,'ts-formula'+(special?' ts-highlight':good?' ts-good':'')+(j>0?' ts-after-think':''));
+  if(j>0)item.style.display='none';board.appendChild(item);
  }
- target.appendChild(board);target.appendChild(el('p',st[2],'ts-explain'));
+ target.appendChild(board);
+ const thought=el('div',null,'ts-think');
+ const prompt=thinkQuestions[selected.id]?.[index]||'この次に何をすべきか、理由と一緒に予想しよう。';
+ const reveal=el('button','考えたので、解説を開く','secondary');reveal.type='button';reveal.id='ts-reveal';
+ reveal.onclick=()=>{revealStep();if(voiceMode)speak()};
+ thought.append(el('strong','✏️ まず自分で考える'),el('p',prompt),reveal);target.appendChild(thought);
+ const explanation=el('p',st[2],'ts-explain ts-after-think');explanation.style.display='none';target.appendChild(explanation);
  if(st[4]){
   const q=st[4],group=el('div',null,'ts-check');group.append(el('strong','ここで考えてみよう'),el('p',q[0]));
   const buttons=el('div',null,'ts-check-options'),feedback=el('p',null,'ts-check-feedback'),record=answers.get(index);
@@ -185,25 +231,31 @@ function paintStep(){
    buttons.appendChild(b)
   });
   if(record!==undefined)feedback.textContent=(record===q[2]?'正解です。':'ここを確認。')+q[3];
-  group.append(buttons,feedback);target.appendChild(group)
+  group.append(buttons,feedback);group.classList.add('ts-after-think');group.style.display='none';target.appendChild(group)
  }
  if(index===selected.steps.length-1){
   const p=el('div',null,'ts-practice');p.append(el('strong','仕上げ：解説を閉じて紙で解こう'),el('p',selected.practice[0]));
-  const d=el('details');d.append(el('summary','ヒント・解答を確認'),el('p','ヒント：'+selected.practice[1]),el('p','解答：'+selected.practice[2]));p.appendChild(d);target.appendChild(p)
+  const d=el('details');d.append(el('summary','ヒント・解答を確認'),el('p','ヒント：'+selected.practice[1]),el('p','解答：'+selected.practice[2]));p.appendChild(d);p.classList.add('ts-after-think');p.style.display='none';target.appendChild(p)
  }
  const progress=document.getElementById('ts-progress-fill');if(progress)progress.style.width=Math.round((index+1)/selected.steps.length*100)+'%';
  const ct=document.getElementById('ts-stage-count');if(ct)ct.textContent='場面 '+(index+1)+' / '+selected.steps.length;
  const prev=document.getElementById('ts-vprev');if(prev)prev.disabled=index===0;
- const next=document.getElementById('ts-vnext');if(next)next.textContent=index===selected.steps.length-1?'授業一覧へ':'次へ →';
- const status=document.getElementById('ts-audio-status');if(status)status.textContent='必要なら「場面を読み上げ」を押してください。';
+ const next=document.getElementById('ts-vnext');if(next){next.textContent=index===selected.steps.length-1?'授業一覧へ':'次へ →';next.disabled=true}
+ const status=document.getElementById('ts-audio-status');if(status)status.textContent=voiceMode?'「解説を開く」で音声が再生されます。':'端末が対応していれば「音声授業を始める」で読み上げます。';
  const autoStatus=document.getElementById('ts-auto-status');if(autoStatus)autoStatus.textContent='';
- setAutoButton();if(auto)tick()
+ setAutoButton();if(auto){revealStep();tick()}
 }
+
 function matchQuestion(q){
  if(!q)return null;
  const s=String(q.q||''),id=String(q.id||''),u=q.u;
  let match=null;
- if(u==='1次不等式'){
+ if(u==='一般動詞')match=['en-verb',1];
+ else if(u==='三単現')match=['en-third',1];
+ else if(u==='疑問文・否定文')match=['en-question',1];
+ else if(u==='英文読解')match=['en-why',1];
+ else if(u==='現在進行形')match=['en-tense',1];
+ else if(u==='1次不等式'){
   const first={
    M006:['ineq-basic',0],M031:['ineq-basic',0],
    M007:['ineq-negative',0],M032:['ineq-negative',0],
@@ -257,7 +309,7 @@ function openForQuestion(q,source){
 }
 function attachQuestionLink(target,q,source,wrong){
  const route=matchQuestion(q);if(!route||!target)return null;
- const b=el('button',wrong?'▶ 間違えた問題を板書で復習':'▶ この問題の解き方を動画で確認','secondary ts-video-quiz');
+ const b=el('button',wrong?'▶ 間違えた問題を授業で復習':'▶ 関連する授業で確認','secondary ts-video-quiz');
  b.type='button';
  b.setAttribute('aria-label',(wrong?'間違い直し：':'関連解説：')+route.title);
  b.onclick=()=>openForQuestion(q,source);
@@ -266,14 +318,19 @@ function attachQuestionLink(target,q,source,wrong){
 }
 const home=document.getElementById('home');
 if(home){
- const p=el('div',null,'ts-video-home');p.append(el('strong','🎬 数学の動く板書授業'),el('p','連立方程式の5つの短い授業。音声・確認問題・紙の仕上げ問題付き。'));
+ const p=el('div',null,'ts-video-home');p.append(el('strong','✏️ 数学の考える板書授業'),el('p','一次不等式・代数の基礎・連立方程式。まず予想→解説→確認問題。端末により音声読み上げを利用できます。'));
  const b=el('button','▶ 授業一覧を開く','secondary');b.type='button';b.onclick=()=>openList('home');p.appendChild(b);
  const near=home.querySelector('.home-help');if(near)home.insertBefore(p,near);else home.appendChild(p)
+}
+if(home){
+ const ep=el('div',null,'ts-video-home ts-english-home');ep.append(el('strong','📘 英語の文法・読解授業'),el('p','一般動詞・三単現・Do/Does・Whyの英文回答・現在進行形を段階的に学びます。'));
+ const ebtn=el('button','▶ 英語の授業一覧を開く','secondary');ebtn.type='button';ebtn.onclick=()=>openList('home','english');ep.appendChild(ebtn);
+ const math=home.querySelector('.ts-video-home');if(math)math.after(ep);else home.appendChild(ep);
 }
 const oldAnswer=answer;
 answer=function(...args){
  const q=state?.set?.[state.i],cat=state?.cat;
- const eligible=cat==='math'&&matchQuestion(q);
+ const eligible=(cat==='math'||cat==='english')&&matchQuestion(q);
  const isCorrect=args[0]===state.correctIndex;
  oldAnswer(...args);
  if(!eligible||!state.locked)return;
@@ -303,6 +360,12 @@ const css=`
 .ts-highlight{color:#ffdd89}.ts-good{color:#99efc9}
 @keyframes ts-rise{from{opacity:0;transform:translateY(13px)}to{opacity:1;transform:translateY(0)}}
 .ts-explain{font-size:15px;line-height:1.8;margin:14px 2px}
+.ts-think{margin:12px 0 0;padding:15px;background:#fff5e8;border:1px solid #ead2af;border-radius:12px}
+.ts-think strong{font-size:15px;color:#694621}.ts-think p{line-height:1.7;font-size:14px}
+.ts-think button{width:100%;min-height:44px;background:#fff;font-weight:800}
+.ts-vcontrols button:disabled{opacity:.45}
+.ts-en-pronounce{display:block;margin:10px 0;width:100%}
+.ts-english-home{background:#f6f8ff;border-color:#d4dcf5}
 .ts-vcontrols{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
 .ts-vcontrols button{min-height:44px;font-size:13px;padding:8px}
 .ts-speed{background:#f0f3f6;padding:9px;border-radius:9px;text-align:center;font-size:13px}
@@ -320,5 +383,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,title:x.title,level:x.level,steps:x.steps.length})),version:'2.4.0'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,title:x.title,level:x.level,steps:x.steps.length})),version:'2.5.0'};
 })();
