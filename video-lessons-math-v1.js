@@ -92,7 +92,7 @@ function paintList(){
  screen.replaceChildren();
  const b=el('button','← 戻る','back');b.type='button';b.onclick=exit;
  screen.append(b,el('h2',catalogSubject==='english'?'英語｜考えて学ぶ文法授業':'数学｜考えて学ぶ板書授業'),el('p','各場面でまず自分で考え、解説を開いて確認します。端末が対応していれば音声読み上げも使えます。学習記録の正答数には加算しません。','ts-note'));
- const groups=catalogSubject==='english'?['一般動詞','三単現','疑問文・否定文','英文読解・記述']:['一次不等式','代数の基礎','連立方程式'];
+ const groups=catalogSubject==='english'?['be動詞','一般動詞','三単現','疑問文・否定文','現在進行形','過去形','英文読解・記述']:['一次不等式','代数の基礎','連立方程式','図形・合同・証明'];
  for(const group of groups){
   const subset=lessons.filter(l=>l.subject===catalogSubject&&l.group===group);
   if(!subset.length)continue;
@@ -312,55 +312,72 @@ function paintStep(){
 
 function matchQuestion(q){
  if(!q)return null;
- const s=String(q.q||''),id=String(q.id||''),u=q.u;
+ const s=String(q.q||''),id=String(q.id||''),u=String(q.u||'');
  let match=null;
- if(u==='一般動詞')match=['en-verb',1];
- else if(u==='三単現')match=['en-third',1];
- else if(u==='疑問文・否定文')match=['en-question',1];
- else if(u==='英文読解')match=['en-why',1];
- else if(u==='現在進行形')match=['en-tense',1];
- else if(u==='1次不等式'){
-  const first={
-   M006:['ineq-basic',0],M031:['ineq-basic',0],
-   M007:['ineq-negative',0],M032:['ineq-negative',0],
-   M008:['ineq-symbol',4],M033:['ineq-symbol',4],
-   M009:['ineq-symbol',1],M034:['ineq-symbol',1],
-   M010:['ineq-symbol',3],M035:['ineq-symbol',3],
-   M011:['ineq-basic',1],M036:['ineq-basic',1]
-  };
-  match=first[id];
-  if(!match){
-   if(/括弧|かっこ|分配|−\s?\d+\s*\(|-\s?\d+\s*\(/.test(s))match=['ineq-bracket',1];
-   else if(/負の数|負数|負の係数|負の|マイナス|反転|逆向き|【不等式】\s*[-−－]\s*\d+x|[＜≦≤]\s*[-−－]\s*\d+x/.test(s))match=['ineq-negative',2];
-   else if(/以上|以下|未満|境界|含む|解とは|どの不等号/.test(s))match=['ineq-symbol',1];
-   else match=['ineq-basic',1];
-  }
+ if(u==='be動詞'){
+  match=/yesterday|last |was|were|過去/.test(s)?['en2-be-past',1]:
+    /疑問|否定|Are |Is |am not|are not|is not/.test(s)?['en2-be-question',1]:
+    /they|we|friends|boys|dogs|parents|複数/i.test(s)?['en2-be-plural',1]:['en2-be-am',1];
+ }else if(u==='一般動詞'){
+  match=/not|don't|do not|否定|does not/i.test(s)?['en2-verb-negative',1]:
+   /疑問|Do |Does |\?/.test(s)?['en2-verb-question',1]:
+   /並べ替え|語順|\[/.test(s)?['en2-verb-order',1]:['en-verb',1];
+ }else if(u==='三単現'){
+  match=/stud|carr|yから|ies|語尾.*y/.test(s)?['en2-third-y',1]:
+   /watch|wash|go |goes|esを付け/.test(s)?['en2-third-es',1]:['en-third',1];
+ }else if(u==='疑問文・否定文'){
+  match=/when|where|why|what|疑問詞/i.test(s)?['en2-wh',1]:
+   /答え|Yes|No|返答|短く/.test(s)?['en2-short-reply',1]:
+   /Does|三単現|he|she|Ken|Mika/i.test(s)?['en2-third-does',1]:['en-question',1];
+ }else if(u==='英文読解'){
+  match=/When|時刻|何時|曜日/i.test(s)?['en2-read-when',1]:
+   /Why|because|理由/i.test(s)?['en2-read-why',1]:['en2-read-full',1];
+ }else if(u==='現在進行形'){
+  match=/疑問|Are |Is |\?/.test(s)?['en2-progressive-question',1]:
+   /否定|not|isn't|aren't/.test(s)?['en2-progressive-negative',1]:['en2-progressive-form',1];
+ }else if(/過去形/.test(u)){
+  match=/Did |疑問|否定|did not|didn't/i.test(s)?['en2-past-did',1]:
+   /went|ate|saw|不規則|go |eat |see /i.test(s)?['en2-past-irregular',1]:['en2-past-ed',1];
+ }else if(u==='1次不等式'){
+  const first={M006:['ineq-basic',0],M031:['ineq-basic',0],M007:['ineq-negative',0],M032:['ineq-negative',0],
+  M008:['ineq-symbol',4],M033:['ineq-symbol',4],M009:['ineq-symbol',1],M034:['ineq-symbol',1],
+  M010:['ineq-symbol',3],M035:['ineq-symbol',3],M011:['ineq-basic',1],M036:['ineq-basic',1]};
+  match=first[id]||(
+   /括弧|かっこ|分配|−\s?\d+\s*\(|-\s?\d+\s*\(/.test(s)?['ineq2-bracket',1]:
+   /分数|小数|\/|÷/.test(s)?['ineq2-fraction',1]:
+   /負の数|負数|負の係数|マイナス|反転|逆向き/.test(s)?['ineq2-negative',1]:
+   /以上|以下|未満|境界|含む|どの不等号/.test(s)?['ineq-symbol',1]:['ineq2-basic',1]);
  }else if(u==='正負の数'){
-  match=/【積】|【商】|掛け算|割り算|同符号|異符号/.test(s)?['algebra-mul',1]:['algebra-add',1];
+  match=/積|商|掛け算|割り算|同符号|異符号/.test(s)?['algebra-mul',1]:['al2-sign',1];
+ }else if(u==='指数・累乗'){
+  match=['al2-power',1];
+ }else if(u==='分数・小数'){
+  match=/割り算|÷|逆数/.test(s)?['al2-division',1]:['al2-common',1];
  }else if(u==='文字式'){
-  match=/【分配】|展開|括弧|かっこ/.test(s)?['algebra-expand',1]:['algebra-sub',1];
+  match=/分配|展開|括弧|かっこ/.test(s)?['al2-distributive',1]:['al2-like',1];
  }else if(u==='一次方程式'){
-  match=['algebra-eq',1];
+  match=['al2-equation',1];
  }else if(u==='分数方程式'){
   match=['algebra-frac',1];
  }else if(u==='連立方程式'){
   const originals={
-   M001:['add',0],M026:['add',0],
-   M002:['coef',0],M027:['coef',0],
-   M003:['sub',0],M028:['sub',0],
-   M004:['fraction',0],M029:['fraction',0],
-   M005:['word',1],M030:['word',1]
+   M001:['add',0],M026:['add',0],M002:['coef',0],M027:['coef',0],M003:['sub',0],M028:['sub',0],
+   M004:['fraction',0],M029:['fraction',0],M005:['word',1],M030:['word',1]
   };
-  match=originals[id];
-  if(!match){
-   if(/分数|小数|分母|通分|÷|\/|[⅓½¼¾]/.test(s))match=['fraction',1];
-   else if(/文章題|冊|本|代金|個数|人数|合計|速さ|濃度|買い物|何円/.test(s))match=['word',1];
-   else if(/【加減法】/.test(s))match=['add',1];
-   else if(/分配|括弧|かっこ|符号|負の数|−2\(|-\s*2\(/.test(s))match=['sign',2];
-   else if(/【連立・代入】|代入法|代入|y[=＝]/.test(s))match=['sub',1];
-   else if(/係数|そろえ|同じ数倍|２倍|2倍|３倍|3倍/.test(s))match=['coef',1];
-   else match=['add',1];
-  }
+  match=originals[id]||(
+   /分数|小数|分母|通分|÷|\//.test(s)?['fraction',1]:
+   /文章題|冊|本|代金|個数|人数|合計|速さ|濃度|買い物|何円/.test(s)?['sim2-word',1]:
+   /【加減法】/.test(s)?['sim2-minus',1]:
+   /分配|括弧|かっこ|符号|負の数|−2\(|-\s*2\(/.test(s)?['sim2-subbracket',1]:
+   /【連立・代入】|代入法|代入|y[=＝]/.test(s)?['sim2-subneg',1]:
+   /係数|そろえ|同じ数倍|２倍|2倍|３倍|3倍/.test(s)?['sim2-lcm',1]:['sim2-add',1]);
+ }else if(u==='図形の性質と合同'||u==='証明'||u==='図形の基本'){
+  match=/共通|仮定|証明|根拠|結論/.test(s)?['geo2-proof',1]:
+   /対頂角/.test(s)?['geo2-vertical',1]:
+   /平行|錯角|同位角/.test(s)?['geo2-parallel',1]:
+   /3組の辺|三辺|SSS/.test(s)?['geo2-sss',1]:
+   /2組の辺|その間の角|SAS/.test(s)?['geo2-sas',1]:
+   /両端の角|ASA/.test(s)?['geo2-asa',1]:['geo2-proof',1];
  }else return null;
  const lesson=lessons.find(l=>l.id===match[0]);
  return lesson?{id:lesson.id,step:match[1],title:lesson.title}:null;
@@ -382,12 +399,12 @@ function attachQuestionLink(target,q,source,wrong){
 }
 const home=document.getElementById('home');
 if(home){
- const p=el('div',null,'ts-video-home');p.append(el('strong','✏️ 数学の対話型板書授業'),el('p','まず解法を選ぶ → 理由を理解 → 途中式を1行ずつ確認 → 類題。音声は端末の読み上げ機能を使用します。'));
+ const p=el('div',null,'ts-video-home');p.append(el('strong','✏️ 数学の対話型板書授業'),el('p','代数・連立・不等式・合同と証明。考えて選ぶ → 途中式を1行ずつ → 類題。音声は端末の読み上げ機能です。'));
  const b=el('button','▶ 授業一覧を開く','secondary');b.type='button';b.onclick=()=>openList('home');p.appendChild(b);
  const near=home.querySelector('.home-help');if(near)home.insertBefore(p,near);else home.appendChild(p)
 }
 if(home){
- const ep=el('div',null,'ts-video-home ts-english-home');ep.append(el('strong','📘 英語の考える授業（5講座）'),el('p','一般動詞・三単現・疑問文・Whyの英文回答・現在進行形。選択問題と日本語解説、英文の発音練習付き。'));
+ const ep=el('div',null,'ts-video-home ts-english-home');ep.append(el('strong','📘 英語の対話型授業'),el('p','be動詞・一般動詞・三単現・疑問文・進行形・過去形・読解。選択→理由→一文で答える練習。'));
  const ebtn=el('button','▶ 英語の授業一覧を開く','secondary');ebtn.type='button';ebtn.onclick=()=>openList('home','english');ep.appendChild(ebtn);
  const math=home.querySelector('.ts-video-home');if(math)math.after(ep);else home.appendChild(ep);
 }
@@ -455,5 +472,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,title:x.title,level:x.level,steps:x.steps.length})),version:'2.6.1'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,title:x.title,level:x.level,steps:x.steps.length})),version:'2.7.0'};
 })();
