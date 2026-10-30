@@ -23,6 +23,8 @@ jobs:
           find . -maxdepth 1 -type f -name '*.js' -print0 | while IFS= read -r -d '' script; do
             node --check "$script"
           done
+      - name: Verify paper evidence link import and deduplication
+        run: node paper-link-v1.test.cjs
       - name: Validate 81-lesson curriculum and independent exercises
         run: node lesson-continuity-v6.test.cjs
       - name: Browser smoke test for lecture catalogue
@@ -38,3 +40,6 @@ jobs:
           timeout 45s "$BROWSER" --headless --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=16000 --dump-dom http://127.0.0.1:8765/tests/browser-smoke.html >/tmp/study-lab-smoke.txt 2>/tmp/study-lab-chrome.err
           grep -o -E 'PASS: [^<]+|FAIL: [^<]+' /tmp/study-lab-smoke.txt | tail -5 || true
           grep -q 'PASS: 81 lessons, 11 overviews, math and English lecture screens' /tmp/study-lab-smoke.txt
+          timeout 45s "$BROWSER" --headless --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=16000 --dump-dom http://127.0.0.1:8765/tests/browser-paper-smoke.html >/tmp/study-lab-paper-smoke.txt 2>/tmp/study-lab-chrome-paper.err
+          grep -o -E 'PASS: [^<]+|FAIL: [^<]+' /tmp/study-lab-paper-smoke.txt | tail -5 || true
+          grep -q 'PASS: paper evidence preview, verified import and URL cleanup' /tmp/study-lab-paper-smoke.txt
