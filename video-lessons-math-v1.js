@@ -163,8 +163,22 @@ window.TakumiTeachFirstV9.apply(lessons);
 const el=(tag,text,cls)=>{const x=document.createElement(tag);if(text!==undefined&&text!==null)x.textContent=String(text);if(cls)x.className=cls;return x};
 const screen=el('section',null,'screen ts-video-screen');screen.id='ts-video-screen';document.querySelector('.wrap').appendChild(screen);
 let selected=null,index=0,from='home',timer=null,auto=false,speed=1,answers=new Map(),decisionAnswers=new Map(),spoken=null,origin=null,catalogSubject='math',voiceMode=false;
+let autoNextOnCorrect=false,correctNextTimer=null;
+function cancelCorrectNext(){if(correctNextTimer!==null)clearTimeout(correctNextTimer);correctNextTimer=null}
+function syncInlineNext(){
+ const inline=document.getElementById('ts-inline-next'),bottom=document.getElementById('ts-vnext');
+ if(inline&&bottom){inline.disabled=bottom.disabled;inline.style.display=bottom.disabled?'none':'block';}
+}
+function scheduleCorrectNext(){
+ cancelCorrectNext();if(!autoNextOnCorrect||!selected)return;
+ const lessonId=selected.id,stageIndex=index;
+ correctNextTimer=setTimeout(()=>{
+  correctNextTimer=null;
+  if(selected?.id===lessonId&&index===stageIndex&&!document.getElementById('ts-vnext')?.disabled)changeStep(1);
+ },4000);
+}
 function cancelAudio(){try{window.speechSynthesis?.cancel()}catch(e){}spoken=null}
-function stop(){if(timer!==null)clearTimeout(timer);timer=null;auto=false;voiceMode=false;cancelAudio()}
+function stop(){cancelCorrectNext();if(timer!==null)clearTimeout(timer);timer=null;auto=false;voiceMode=false;cancelAudio()}
 const priorShow=show;show=function(id){if(id!==screen.id)stop();priorShow(id)};
 function exit(){stop();selected=null;show(from)}
 function openList(source,subject='math'){stop();selected=null;origin=null;from=source||from;catalogSubject=subject==='english'?'english':'math';paintList();show(screen.id)}
@@ -230,9 +244,9 @@ function tick(){
  timer=setTimeout(()=>{if(auto){index++;paintStep()}},Math.round(15500/speed))
 }
 function setAutoButton(){const b=document.getElementById('ts-autobtn');if(b)b.textContent=auto?'⏸ 自動再生を停止':'▶ 板書を自動再生'}
-function changeStep(delta){if(!selected)return;cancelAudio();const next=index+delta;if(next<0)return;
+function changeStep(delta){if(!selected)return;cancelCorrectNext();cancelAudio();const next=index+delta;if(next<0)return;
  if(next>=selected.steps.length){stop();paintList();return}
- index=next;paintStep();if(voiceMode)speakPrompt()
+ index=next;paintStep();document.getElementById('ts-vstage')?.scrollIntoView({behavior:'smooth',block:'start'});if(voiceMode)speakPrompt()
 }
 function toggleAuto(){if(auto){auto=false;if(timer!==null)clearTimeout(timer);timer=null;setAutoButton();return}
  if(index===selected.steps.length-1)index=0;auto=true;paintStep()}
@@ -292,7 +306,12 @@ starter.type='button';starter.id='ts-voice-starter';starter.onclick=()=>{
 };
 screen.appendChild(starter);
 screen.appendChild(el('p','まず説明を読み、板書を一行ずつ確かめた後で理解度を確認します。録画動画ではなく端末の音声合成です。','ts-voice-help'));
- const stage=el('div',null,'ts-vstage');stage.id='ts-vstage';screen.appendChild(stage);
+ const autoNextLabel=el('label',null,'ts-auto-next-setting');
+const autoNextCheck=el('input');autoNextCheck.type='checkbox';autoNextCheck.id='ts-auto-next';autoNextCheck.checked=autoNextOnCorrect;
+autoNextCheck.onchange=()=>{autoNextOnCorrect=autoNextCheck.checked;if(!autoNextOnCorrect)cancelCorrectNext()};
+autoNextLabel.append(autoNextCheck,el('span','正解したら約4秒後に自動で次へ（任意）'));
+screen.appendChild(autoNextLabel);
+const stage=el('div',null,'ts-vstage');stage.id='ts-vstage';screen.appendChild(stage);
  const controls=el('div',null,'ts-vcontrols');
  const prev=el('button','← 前へ','secondary');prev.type='button';prev.id='ts-vprev';prev.onclick=()=>changeStep(-1);
  const next=el('button','次へ →','secondary');next.type='button';next.id='ts-vnext';next.onclick=()=>changeStep(1);
@@ -334,6 +353,7 @@ function showTeachingNotes(){
  const confirm=stage.querySelector('.ts-think');if(confirm&&!isFinal)confirm.style.display='';
  const next=document.getElementById('ts-vnext');
  if(next)next.disabled=(!isFinal && !!stage.querySelector('.ts-decision-choices') && !decisionAnswers.has(index));
+ syncInlineNext();
  const lineBtn=stage.querySelector('#ts-next-line');if(lineBtn)lineBtn.style.display='none';
 }
 function showNextLine(){
@@ -372,7 +392,7 @@ const thinkQuestions={
 };
 function paintStep(){
  if(!selected)return;const st=selected.steps[index],target=document.getElementById('ts-vstage');if(!target)return;
- if(timer!==null)clearTimeout(timer);timer=null;target.replaceChildren();
+ cancelCorrectNext();if(timer!==null)clearTimeout(timer);timer=null;target.replaceChildren();
  const finalPractice=index===selected.steps.length-1;
  target.appendChild(el('h3',st[0]));
  if(!finalPractice){
@@ -411,6 +431,11 @@ function paintStep(){
       for(const child of options.children)child.disabled=true;
       b.classList.add('ts-correct');
       const nextButton=document.getElementById('ts-vnext');if(nextButton)nextButton.disabled=false;
+      syncInlineNext();
+      if(autoNextOnCorrect){
+       const note=el('p','正解です。約4秒後に次へ進みます（ボタンで先に進むこともできます）。','ts-auto-next-message');
+       result.after(note);scheduleCorrectNext();
+      }
     }else{
       b.classList.add('ts-incorrect');b.disabled=true;
       if([...options.children].every(el=>el.disabled)){
@@ -466,13 +491,17 @@ function paintStep(){
   }
   p.appendChild(d);p.classList.add('ts-after-think');p.style.display='none';target.appendChild(p)
  }
+ const inlineNext=el('button',finalPractice?'授業一覧へ →':'次の説明へ →','secondary ts-inline-next');
+ inlineNext.type='button';inlineNext.id='ts-inline-next';inlineNext.style.display='none';inlineNext.disabled=true;
+ inlineNext.onclick=()=>{if(inlineNext.disabled)return;changeStep(1)};
+ target.appendChild(inlineNext);
  const progress=document.getElementById('ts-progress-fill');if(progress)progress.style.width=Math.round((index+1)/selected.steps.length*100)+'%';
  const ct=document.getElementById('ts-stage-count');if(ct)ct.textContent='場面 '+(index+1)+' / '+selected.steps.length;
  const prev=document.getElementById('ts-vprev');if(prev)prev.disabled=index===0;
  const next=document.getElementById('ts-vnext');if(next){next.textContent=index===selected.steps.length-1?'授業一覧へ':'次へ →';next.disabled=true}
  const status=document.getElementById('ts-audio-status');if(status)status.textContent=voiceMode?'問題を考えたあと、板書を1行ずつ確認してください。':'音声を使う場合は上の「音声つきで授業を始める」を押してください。';
  const autoStatus=document.getElementById('ts-auto-status');if(autoStatus)autoStatus.textContent='';
- setAutoButton();if(auto){revealStep();tick()}
+ setAutoButton();syncInlineNext();if(auto){revealStep();tick()}
 }
 
 function matchQuestion(q){
@@ -627,6 +656,11 @@ const css=`
 .ts-teach-before-quiz strong{font-size:15px;color:#174666}
 .ts-teach-before-quiz p{font-size:15px;line-height:1.95;margin:8px 0 0;color:#253e52}
 .ts-start-teaching{width:100%;min-height:48px;margin:14px 0;font-weight:800}
+.ts-inline-next{display:block;width:100%;min-height:54px;margin:14px 0 5px!important;font-weight:850;font-size:16px;background:#d7eefc;border:2px solid #7fb3d4;color:#16425d}
+.ts-auto-next-setting{display:flex;gap:10px;align-items:center;margin:10px 0 12px;padding:12px 14px;border:1px solid #c6d8e6;border-radius:11px;background:#eef5fb;font-size:13px;line-height:1.6;cursor:pointer}
+.ts-auto-next-setting input{min-width:21px;min-height:21px;accent-color:#27709a}
+.ts-auto-next-message{font-size:12px;color:#365b78;line-height:1.6}
+
 .ts-think{margin-top:16px!important}
 .ts-teacher-notes{display:grid;gap:10px;margin:8px 0 15px}
 .ts-teacher-notes section{padding:12px 14px;border-radius:11px;font-size:14px;line-height:1.8}
@@ -679,5 +713,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked,overview:!!x.overview})),version:'3.9.0'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked,overview:!!x.overview})),version:'3.10.0'};
 })();

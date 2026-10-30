@@ -39,5 +39,5 @@ assert.ok(player.includes("thought.style.display='none'"),'Quiz must initially b
 assert.ok(player.includes("if(confirm&&!isFinal)confirm.style.display=''"),'Quiz should appear after teaching');
 assert.ok(player.includes("nextButton.disabled=false"),'Correct checkpoint should allow progress');
 assert.ok(player.includes("openLesson(route.id,source||'quiz',0"),'Remediation should start at the foundation');
-assert.ok(html.indexOf('lesson-teach-first-v9.js?v=3900')<html.indexOf('video-lessons-math-v1.js?v=3900'),'Opening lesson module must load before player');
+assert.ok(html.indexOf('lesson-teach-first-v9.js?v=3900')<html.indexOf('video-lessons-math-v1.js?v=31000'),'Opening lesson module must load before player');
 console.log('PASS: introduction teaches before asking, 19 grounded stages, self-study preserved, all-lesson UI gate wired');
