@@ -5,6 +5,9 @@ const output=document.getElementById('result');
 document.getElementById('app').addEventListener('load',()=>{
  try{
   const frame=document.getElementById('app'),w=frame.contentWindow,d=frame.contentDocument;
+  const titleVersion=d.title.match(/v\d+(?:\.\d+)+/)?.[0];
+  const badgeVersion=d.getElementById('studyLabVersionBadge')?.textContent.match(/v\d+(?:\.\d+)+/)?.[0];
+  if(!titleVersion||titleVersion!==badgeVersion)throw Error('home version badge and page title disagree: '+badgeVersion+' / '+titleVersion);
   const api=w.TakumiVideoLessons;
   if(!api||api.lessonList.length!==81)throw Error('lesson list missing or incomplete');
   if(api.lessonList.filter(l=>l.overview).length!==11)throw Error('overview count wrong');
