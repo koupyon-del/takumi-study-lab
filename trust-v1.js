@@ -104,10 +104,52 @@ nextQ=function(){
  baseNext();
 };
 
-function markPaper(cat,u,g,sourceDate,source){
- if(!['good','maybe','weak'].includes(g))return;
+
+const verifiedPaperGrades={'○':'good','△':'maybe','×':'weak',O:'good',A:'maybe',X:'weak',good:'good',maybe:'maybe',weak:'weak'};
+function validPaperDate(s){
+ if(typeof s!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(s))return false;
+ const d=new Date(s+'T00:00:00Z');
+ return !Number.isNaN(d.getTime())&&d.toISOString().slice(0,10)===s;
+}
+/* The same strict validation is used for file imports and link imports.
+   Never silently throw away a subject or an unknown unit. */
+function validatePaperPayload(payload){
+ if(!payload||typeof payload!=='object'||Array.isArray(payload))throw Error('紙教材のデータ形式が正しくありません。');
+ if(payload.schema&&payload.schema!=='takumi-study-lab-paper-v1')throw Error('未対応の紙教材データ形式です。');
+ const sourceDate=payload.sourceDate||payload.date||payload.gradedAt;
+ if(!validPaperDate(sourceDate))throw Error('実施日が正しいYYYY-MM-DD形式ではありません。');
+ if(sourceDate>new Date(Date.now()+86400000).toISOString().slice(0,10))throw Error('実施日が未来の日付です。');
+ const ref=payload.subjects||payload.results;
+ if(!ref||typeof ref!=='object'||Array.isArray(ref))throw Error('教科別の採点結果がありません。');
+ const items=[];
+ for(const [cat,vals] of Object.entries(ref)){
+  if(!Object.prototype.hasOwnProperty.call(data,cat))throw Error('未対応の教科：'+cat);
+  if(!vals||typeof vals!=='object'||Array.isArray(vals))throw Error('教科別の評価形式が不正です：'+cat);
+  const known=new Set(data[cat].map(q=>q.u));
+  for(const [unit,value] of Object.entries(vals)){
+   if(!known.has(unit))throw Error('アプリの単元名と一致しません：'+cat+'／'+unit);
+   const raw=typeof value==='string'?value:value?.grade;
+   const grade=verifiedPaperGrades[raw];
+   if(!grade)throw Error('評価は○・△・×のいずれかにしてください：'+unit);
+   items.push({cat,unit,grade});
+   if(items.length>100)throw Error('一度に登録できる評価は100件までです。');
+  }
+ }
+ if(!items.length)throw Error('取り込める単元評価がありません。');
+ items.sort((a,b)=>(a.cat+'/'+a.unit).localeCompare(b.cat+'/'+b.unit,'ja'));
+ return {sourceDate,title:String(payload.title||'紙教材の採点結果').slice(0,100),items};
+}
+function verifiedPaperBatchId(parsed){
+ const s=JSON.stringify({sourceDate:parsed.sourceDate,items:parsed.items});
+ let a=2166136261,b=0x811c9dc7;
+ for(let i=0;i<s.length;i++){const n=s.charCodeAt(i);a=Math.imul(a^n,16777619);b=Math.imul(b^(n+i),2246822519)}
+ return (a>>>0).toString(16).padStart(8,'0')+(b>>>0).toString(16).padStart(8,'0');
+}
+function markPaper(cat,u,g,sourceDate,source,eventId){
+ if(!['good','maybe','weak'].includes(g))return false;
  const t=store(),now=Date.now();
- const id=now+'-P'+(++n)+'-'+Math.random().toString(36).slice(2);
+ const id=eventId||now+'-P'+(++n)+'-'+Math.random().toString(36).slice(2);
+ if(Object.prototype.hasOwnProperty.call(t.paperEvents,id))return false;
  const event={id,cat,unit:u,grade:g,sourceDate,source,verifiedAt:now};
  t.paperEvents={...t.paperEvents,[id]:event};
  const old=t.paper[cat]?.[u];
@@ -117,33 +159,34 @@ function markPaper(cat,u,g,sourceDate,source){
   db.paperUpdated[cat]=db.paperUpdated[cat]||{};
   db.paper[cat][u]=g;db.paperUpdated[cat][u]=now;
  }
+ return true;
+}
+function importVerifiedPaperPayload(payload,source='verified_paper_link'){
+ const parsed=validatePaperPayload(payload),batch=verifiedPaperBatchId(parsed);
+ let added=0;
+ for(const {cat,unit,grade} of parsed.items){
+  const eventId='paper-batch:'+batch+':'+cat+':'+unit;
+  if(markPaper(cat,unit,grade,parsed.sourceDate,source,eventId))added++;
+ }
+ if(added){save();if(document.getElementById('paper')?.classList.contains('active'))renderPaper();refresh();window.TakumiCurriculum?.refresh?.()}
+ return {...parsed,added,duplicates:parsed.items.length-added,batchId:batch};
 }
 setPaper=function(cat,u,g){
  if(!confirm('この紙答案を保護者が確認した結果として登録しますか？\n過去の不確かなアプリ正答率は根拠にしないでください。'))return;
- markPaper(cat,u,g,new Date().toISOString().slice(0,10),'manual_parent');save();renderPaper();updateStats();
+ markPaper(cat,u,g,new Date().toISOString().slice(0,10),'manual_parent');save();renderPaper();refresh();
 };
 importPaper=function(ev){
  const f=ev.target.files?.[0];if(!f)return;
  const rd=new FileReader();
  rd.onload=()=>{
   try{
-   const x=JSON.parse(rd.result),list=[],ref=x.subjects||x.results||{};
-   const grades={'○':'good','△':'maybe','×':'weak',O:'good',A:'maybe',X:'weak',good:'good',maybe:'maybe',weak:'weak'};
-   for(const [cat,vals] of Object.entries(ref)){
-    if(!data[cat]||!vals||typeof vals!=='object')continue;
-    const valid=new Set(data[cat].map(q=>q.u));
-    for(const [u,value] of Object.entries(vals)){
-     const v=typeof value==='string'?value:value?.grade;
-     if(valid.has(u)&&grades[v])list.push([cat,u,grades[v]]);
-    }
-   }
-   if(!list.length){alert('一致する単元評価がありません。');return}
-   const suggested=String(x.sourceDate||x.date||x.gradedAt||'').slice(0,10)||new Date().toISOString().slice(0,10);
-   const date=prompt('紙課題を実施した日を入力してください（YYYY-MM-DD）',suggested);
-   if(!date||!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(Date.parse(date+'T00:00:00'))){alert('日付の確認ができず登録を中止しました。');return}
-   if(!confirm(date+'の紙課題 '+list.length+'単元は、保護者が答案を確認し、自力で取り組んだ結果ですか？\n古い不確かな評価は登録しないでください。'))return;
-   for(const [cat,u,g] of list)markPaper(cat,u,g,date,'verified_paper_import');
-   save();renderPaper();updateStats();alert('確認済み紙教材 '+list.length+'単元を登録しました。');
+   const x=JSON.parse(rd.result),parsed=validatePaperPayload(x);
+   const date=prompt('紙課題を実施した日を入力してください（YYYY-MM-DD）',parsed.sourceDate);
+   if(date===null)return;
+   const checked=validatePaperPayload({...x,sourceDate:date});
+   if(!confirm(checked.sourceDate+'の紙課題 '+checked.items.length+'単元は、保護者が答案を確認し、自力で取り組んだ結果ですか？\n古い不確かな評価は登録しないでください。'))return;
+   const out=importVerifiedPaperPayload({...x,sourceDate:date},'verified_paper_import');
+   alert(out.added?'確認済み紙教材 '+out.added+'単元を登録しました。'+(out.duplicates?'（登録済み'+out.duplicates+'単元）':''):'この紙教材は登録済みです。重複登録はしていません。');
   }catch(e){alert('JSONを読み込めませんでした：'+String(e.message||e))}
   finally{ev.target.value=''}
  };
@@ -222,6 +265,6 @@ const paperScreen=document.getElementById('paper');
 if(paperScreen)paperScreen.insertBefore(notice,paperScreen.querySelector('input[type=file]')||paperScreen.firstChild);
 
 /* EXTENSION_POINT */
-window.TakumiTrust={store,grade,score,priority,confirmed,refresh,summary,report:trustedReport};
+window.TakumiTrust={store,grade,score,priority,confirmed,refresh,summary,report:trustedReport,validatePaperPayload,importVerifiedPaperPayload};
 refresh();
 })();
