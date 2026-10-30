@@ -148,6 +148,13 @@ for(const [id,fix] of Object.entries(window.TakumiLessonContinuityFixes||{})){
  lesson.level='理由から一行ずつ学ぶ';
  lesson.minutes='約12〜20分・分割受講可';
  lesson.continuityChecked=true;
+ // The continuity module is applied after the legacy audit, so normalize its last slide too.
+ const final=lesson.steps[lesson.steps.length-1];
+ final[0]='仕上げ｜初見問題を自力で解く';
+ final[1]=[lesson.practice[0]];
+ final[2]='まず自分の力で解き、途中式と理由を書きます。答え合わせが終わるまでヒントを開かないでください。';
+ final[3]='ここからは新しい問題です。ノートに解答を書いてから確認しましょう。';
+ final.length=4;
 }
 const el=(tag,text,cls)=>{const x=document.createElement(tag);if(text!==undefined&&text!==null)x.textContent=String(text);if(cls)x.className=cls;return x};
 const screen=el('section',null,'screen ts-video-screen');screen.id='ts-video-screen';document.querySelector('.wrap').appendChild(screen);
