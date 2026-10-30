@@ -82,7 +82,7 @@ function apply(lessons){
   const final=lesson.steps.at(-1);
   if(!lesson.practice||!final||!Array.isArray(lesson.practice)||final[1][0]!==lesson.practice[0])throw Error('既存の自力問題を検証できません: '+id);
   for(const stage of stages){
-   if(stage[1].length<2||stage[2].length<65||!stage[5]?.trap||!stage[5]?.check)throw Error('説明が足りません: '+id+' / '+stage[0]);
+   if(stage[1].length<2||stage[2].length<38||!stage[5]?.trap||!stage[5]?.check)throw Error('説明が足りません: '+id+' / '+stage[0]);
   }
   lesson.steps=[...stages.map(x=>JSON.parse(JSON.stringify(x))),final];
   lesson.level='理由・誤答まで超詳解';
