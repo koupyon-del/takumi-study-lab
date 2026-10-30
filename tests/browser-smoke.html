@@ -19,6 +19,14 @@ document.getElementById('app').addEventListener('load',()=>{
   api.openLesson('ineq2-negative','home');
   if(!d.getElementById('ts-video-screen').textContent.includes('不等式：負数で割る理由'))throw Error('math tutorial did not open');
   if(!d.getElementById('ts-reveal'))throw Error('missing explanation reveal');
+  api.openLesson('ineq-negative','home');
+  const mathLesson=d.getElementById('ts-video-screen');
+  if(!mathLesson.textContent.includes('数直線の順番を確認'))throw Error('detailed negative-inequality lesson missing');
+  const reveal=mathLesson.querySelector('#ts-reveal');if(!reveal)throw Error('math reveal missing');
+  reveal.click();
+  const showline=mathLesson.querySelector('#ts-next-line');
+  for(let i=0;i<8&&showline?.style.display!=='none';i++)showline.click();
+  if(!mathLesson.textContent.includes('よくある間違い')||!mathLesson.textContent.includes('自分で確かめること'))throw Error('detailed math coaching notes missing');
   api.openLesson('en2-third-y','home');
   if(!d.getElementById('ts-video-screen').textContent.includes('study→studies'))throw Error('English lesson did not open');
   output.textContent='PASS: 81 lessons, 11 overviews, math and English lecture screens';
