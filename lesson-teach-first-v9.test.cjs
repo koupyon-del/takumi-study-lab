@@ -21,7 +21,7 @@ assert.equal(add.steps.length,8,'7 detailed add stages plus independent practice
 for(const lesson of [sum,add]){
  assert.equal(lesson.steps.at(-1)[1][0],practice,'Independent task was changed or shown too early');
  assert.equal(lesson.steps.at(-1)[1].length,1,'Independent answer leaked into initial view');
- assert.equal(lesson.steps[0][4],undefined,'Opening must not quiz a new student');
+ assert.ok(lesson.steps[0][4]==null,'Opening must not quiz a new student');
  assert.ok(lesson.steps[0][2].length>=55,'First teaching paragraph too brief');
  const firstQuiz=lesson.steps.findIndex(s=>s[4]);
  assert.ok(firstQuiz>=6,'Quiz must be after multiple teacher explanations');
