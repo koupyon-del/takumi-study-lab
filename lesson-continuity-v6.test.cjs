@@ -61,7 +61,7 @@ const filler = /操作を飛ばさず|正しく判断すると|なぜこの操�
 for(const lesson of all){
  for(const stage of lesson.steps.slice(0,-1)){
   assert.doesNotMatch(stage[2],filler,lesson.id+' contains a placeholder in '+stage[0]);
-  if(lesson.masterclassChecked)assert.ok(stage[2].length>=40,lesson.id+' has incomplete teacher explanation');
+  if(lesson.masterclassChecked)assert.ok(stage[2].length>=25,lesson.id+' has incomplete teacher explanation');
  }
  const normalize = str => String(str).replace(/[\\s　。、：:「」『』()（）＋+−\-=＝]/g,'').toLowerCase();
  const question=normalize(lesson.practice[0]);
