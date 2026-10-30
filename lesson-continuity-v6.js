@@ -1,7 +1,7 @@
 /* v3.3: teacher-authored complete explanations; no model-generated inference at runtime. */
 (function(){'use strict';
 const S=(title,lines,reason,quiz)=>quiz?[title,lines,reason,reason,quiz]:[title,lines,reason,reason];
-const end=S('仕上げ｜初見問題を自力で解く',['別の問題に取り組む'],'この場面は解説ではなく自力演習です。まず自分の答えと理由を書き、そのあとでヒント・模範解答を開いて確かめます。');
+const end=S('仕上げ｜初見問題を自力で解く',['別の問題に取り組む','途中式と理由を必ず自分で書く'],'この場面は解説ではなく自力演習です。まず自分の答えと理由を書き、そのあとでヒント・模範解答を開いて確かめます。');
 window.TakumiLessonContinuityFixes={
 'al2-equation':{
  practice:['6x−5＝2x＋11 を解き、左右に代入して確かめる。','まず両辺から2xを引く。4x−5＝11→両辺に5を足す→4x＝16→両辺を4で割る。','x＝4。左辺6×4−5＝19、右辺2×4＋11＝19。'],
