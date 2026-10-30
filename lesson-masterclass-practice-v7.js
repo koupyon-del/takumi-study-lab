@@ -22,6 +22,7 @@
 'geo2-sss':['MN＝QR、NO＝RS、OM＝SQ が仮定のとき、2つの三角形の合同を示す。','対応M↔Q、N↔R、O↔Sを見て、3組の辺が等しい合同条件を使う。','3組の辺がそれぞれ等しいので、△MNO≡△QRS。'],
 'geo2-sas':['XY＝PQ、YZ＝QR、∠Y＝∠Q のとき合同条件を答える。','∠Yと∠Qは等しい2組の辺の間にある角。','2組の辺とその間の角がそれぞれ等しい。'],
 'geo2-asa':['∠X＝∠P、XY＝PQ、∠Y＝∠Q のとき合同条件を答える。','対応する1組の辺と、その両端の2組の角を確認する。','1組の辺とその両端の角がそれぞれ等しい。'],
+'en-verb':['My cousins (watch) movies on Sundays. の括弧内を正しい形にして英文を完成する。','My cousinsは複数でtheyに置き換えられるのでwatchは原形のまま。','My cousins watch movies on Sundays.'],
 'en-why':['Mika stays home because she has a fever. Why does Mika stay home?','Whyの答えは本文にあるbecauseの後の理由を使う。','Because she has a fever.'],
 'en-tense':['She (read) a book now. を適切な形で完成する。','nowなので現在進行形。sheに合わせてis＋reading。','She is reading a book now.'],
 'en2-be-plural':['The children ___ happy. の空欄を埋める。','childrenはchildの複数形なのでtheyと同じ扱い。','The children are happy.'],
