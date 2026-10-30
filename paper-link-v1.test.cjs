@@ -21,7 +21,7 @@ const context={
  document:{createElement(tag){return {tag,textContent:'',appendChild(){},className:''}},
    head:{appendChild(){}},getElementById(id){return id==='paper'?paper:null}},
  data:categoryData,
- db:{q:{},played:0,trust:{answers:{},paper:{},paperEvents:{}}},
+ db:{q:{},played:0,paper:{},paperUpdated:{},trust:{answers:{},paper:{},paperEvents:{}}},
  rec(){return {}},
  mastered(){return false},
  answer(){},setConfidence(){},nextQ(){},openPaper(){},setPaper(){},importPaper(){},
