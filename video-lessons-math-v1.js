@@ -156,6 +156,7 @@ for(const [id,fix] of Object.entries(window.TakumiLessonContinuityFixes||{})){
  final[3]='ここからは新しい問題です。ノートに解答を書いてから確認しましょう。';
  final.length=4;
 }
+window.TakumiApplyMasterclass(lessons);
 const el=(tag,text,cls)=>{const x=document.createElement(tag);if(text!==undefined&&text!==null)x.textContent=String(text);if(cls)x.className=cls;return x};
 const screen=el('section',null,'screen ts-video-screen');screen.id='ts-video-screen';document.querySelector('.wrap').appendChild(screen);
 let selected=null,index=0,from='home',timer=null,auto=false,speed=1,answers=new Map(),decisionAnswers=new Map(),spoken=null,origin=null,catalogSubject='math',voiceMode=false;
@@ -633,5 +634,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked,overview:!!x.overview})),version:'3.3.0'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked,overview:!!x.overview})),version:'3.4.0'};
 })();
