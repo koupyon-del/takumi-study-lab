@@ -9,7 +9,11 @@ const output=document.getElementById('result'),frame=document.getElementById('ap
 frame.addEventListener('load',()=>{
  try{
   const w=frame.contentWindow,d=frame.contentDocument,shade=d.querySelector('section[role="dialog"]');
-  if(!shade||!shade.textContent.includes('連立方程式')||!shade.textContent.includes('三単現'))throw Error('link preview missing');
+  if(!shade||!shade.textContent.includes('連立方程式')||!shade.textContent.includes('三単現')){
+   let diag='hash='+w.location.hash.slice(0,22)+' bridge='+Boolean(w.TakumiPaperLink)+' trust='+Boolean(w.TakumiTrust)+' dialogs='+d.querySelectorAll('[role=dialog]').length;
+   try{diag+=' parsed='+w.TakumiTrust.validatePaperPayload(w.TakumiPaperLink.decode(token)).items.length}catch(e){diag+=' parseError='+e.message}
+   throw Error('link preview missing: '+diag);
+  }
   if(Object.keys(w.TakumiTrust.store().paperEvents||{}).length)throw Error('unapproved grades were stored');
   const apply=[...shade.querySelectorAll('button')].find(x=>x.textContent==='確認して取り込む');
   if(!apply)throw Error('confirmation button missing');
