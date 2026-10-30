@@ -25,6 +25,8 @@ jobs:
           done
       - name: Verify paper evidence link import and deduplication
         run: node paper-link-v1.test.cjs
+      - name: Verify private paper inbox sync and cloud acknowledgement
+        run: node paper-inbox-v1.test.cjs
       - name: Validate 81-lesson curriculum and independent exercises
         run: node lesson-continuity-v6.test.cjs
       - name: Browser smoke test for lecture catalogue
