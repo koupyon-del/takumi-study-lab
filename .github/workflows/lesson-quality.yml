@@ -1,0 +1,40 @@
+name: Study Lab lesson quality
+on:
+  push:
+    branches:
+      - main
+      - fix/lesson-explanation-continuity-20261030
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  teaching-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse every application JavaScript file
+        shell: bash
+        run: |
+          set -euo pipefail
+          find . -maxdepth 1 -type f -name '*.js' -print0 | while IFS= read -r -d '' script; do
+            node --check "$script"
+          done
+      - name: Validate 81-lesson curriculum and independent exercises
+        run: node lesson-continuity-v6.test.cjs
+      - name: Browser smoke test for lecture catalogue
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER" || { echo "Chromium is not installed"; exit 1; }
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/study-lab-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          sleep 1
+          timeout 45s "$BROWSER" --headless --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=16000 --dump-dom http://127.0.0.1:8765/tests/browser-smoke.html >/tmp/study-lab-smoke.txt 2>/tmp/study-lab-chrome.err
+          grep -o -E 'PASS: [^<]+|FAIL: [^<]+' /tmp/study-lab-smoke.txt | tail -5 || true
+          grep -q 'PASS: 81 lessons, 11 overviews, math and English lecture screens' /tmp/study-lab-smoke.txt

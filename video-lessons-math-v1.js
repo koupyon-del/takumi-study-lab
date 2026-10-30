@@ -124,7 +124,9 @@ for(const l of lessons){
  }
  // The independent exercise comes last: never display its hint in advance.
  const last=l.steps[l.steps.length-1];
- last[1][0]=l.practice[0];
+ last[0]='仕上げ｜初見問題を自力で解く';
+ last[1]=[l.practice[0]]; // Replace the entire worked board: never mix an earlier example with the new exercise.
+ last.length=4; // The exercise must not reuse an old multiple-choice checkpoint.
  last[2]='まず紙で自力で解き、理由と途中式を残しましょう。行き詰まった場合だけ下の「ヒント・解答」を開いてください。';
  last[3]='ここからは別問題です。解説は閉じ、考え方と途中式を自分で書いてから答え合わせをしてください。';
  for(const s of l.steps){
@@ -132,6 +134,29 @@ for(const l of lessons){
   s[3]=s[3].replaceAll('。。','。').replaceAll('式または英文の各部分を確かめます',l.subject==='math'?'式の各行を確かめます':'英文の各部分を確かめます');
  }
 }
+// Quality-gated, fully worked lesson corrections load after prior legacy rewrites.
+for(const [id,fix] of Object.entries(window.TakumiLessonContinuityFixes||{})){
+ const lesson=lessons.find(l=>l.id===id);
+ if(!lesson)throw Error('Continuity correction target is missing: '+id);
+ if(!Array.isArray(fix.practice)||fix.practice.length!==3||fix.practice.some(v=>typeof v!=='string'||v.length<8))
+  throw Error('Incomplete independent practice: '+id);
+ if(!Array.isArray(fix.steps)||fix.steps.length<6||fix.steps.some(s=>!Array.isArray(s)||s.length<4||s[1].length<2||String(s[2]).length<25||String(s[3]).length<25))
+  throw Error('Explanation gap detected: '+id);
+ // Clone shared lesson data: the final stage is customized for each independent exercise.
+ lesson.steps=JSON.parse(JSON.stringify(fix.steps));
+ lesson.practice=[...fix.practice];
+ lesson.level='理由から一行ずつ学ぶ';
+ lesson.minutes='約12〜20分・分割受講可';
+ lesson.continuityChecked=true;
+ // The continuity module is applied after the legacy audit, so normalize its last slide too.
+ const final=lesson.steps[lesson.steps.length-1];
+ final[0]='仕上げ｜初見問題を自力で解く';
+ final[1]=[lesson.practice[0]];
+ final[2]='まず自分の力で解き、途中式と理由を書きます。答え合わせが終わるまでヒントを開かないでください。';
+ final[3]='ここからは新しい問題です。ノートに解答を書いてから確認しましょう。';
+ final.length=4;
+}
+window.TakumiApplyMasterclass(lessons);
 const el=(tag,text,cls)=>{const x=document.createElement(tag);if(text!==undefined&&text!==null)x.textContent=String(text);if(cls)x.className=cls;return x};
 const screen=el('section',null,'screen ts-video-screen');screen.id='ts-video-screen';document.querySelector('.wrap').appendChild(screen);
 let selected=null,index=0,from='home',timer=null,auto=false,speed=1,answers=new Map(),decisionAnswers=new Map(),spoken=null,origin=null,catalogSubject='math',voiceMode=false;
@@ -189,8 +214,8 @@ function speak(override){
 }
 function speakPrompt(){
  const st=selected?.steps[index];if(!st||!voiceMode)return;
- const prompt=selected?.steps[index]?.[4]?.[0]||(!selected.deepDetailed&&window.TakumiTutorDecisions?.[selected.id]?.[index]?.prompt)||
-   thinkQuestions[selected.id]?.[index]||'次に何をするか考えてください。';
+ const prompt=selected?.steps[index]?.[4]?.[0]||(!selected.deepDetailed&&!selected.continuityChecked&&window.TakumiTutorDecisions?.[selected.id]?.[index]?.prompt)||
+   (selected.continuityChecked?null:thinkQuestions[selected.id]?.[index])||'次に何をするか考えてください。';
  speak(st[0]+'。'+prompt+'。まず自分で考えて、選択してください。');
 }
 function tick(){
@@ -351,11 +376,12 @@ function paintStep(){
  }
  target.appendChild(board);
  const thought=el('div',null,'ts-think');
- const builtInQuiz=st[4];
+ const finalPractice=index===selected.steps.length-1;
+ const builtInQuiz=finalPractice?null:st[4];
  const tutor=builtInQuiz?{prompt:builtInQuiz[0],options:builtInQuiz[1],correct:builtInQuiz[2],reason:builtInQuiz[3],wrong:builtInQuiz[4]}:
-   (selected.deepDetailed?null:window.TakumiTutorDecisions?.[selected.id]?.[index]);
- const prompt=tutor?.prompt||thinkQuestions[selected.id]?.[index]||'この次に何をすべきか、理由と一緒に予想しよう。';
- const reveal=el('button','考えたので、解説を開く','secondary');reveal.type='button';reveal.id='ts-reveal';
+   ((selected.deepDetailed||selected.continuityChecked||finalPractice)?null:window.TakumiTutorDecisions?.[selected.id]?.[index]);
+ const prompt=finalPractice?'ここからは新しい問題です。ノートに理由と途中式（英語なら主語・動詞・語順）を書き、答えを出してから確認しましょう。':(tutor?.prompt||(selected.continuityChecked?null:thinkQuestions[selected.id]?.[index])||'この場面の板書を見て、何をしたか・なぜ許されるかを自分の言葉で説明しよう。');
+ const reveal=el('button',finalPractice?'自力で解いたので、答え合わせへ':'考えたので、解説を開く','secondary');reveal.type='button';reveal.id='ts-reveal';
  reveal.disabled=!!tutor&&decisionAnswers.get(index)===undefined;
  reveal.onclick=()=>{if(reveal.disabled)return;revealStep();if(voiceMode)speak(st[0]+'。'+st[3])};
  thought.append(el('strong','✏️ まず自分で考える'),el('p',prompt));
@@ -392,7 +418,7 @@ function paintStep(){
  const explanation=el('p',st[2],'ts-explain ts-after-think');explanation.style.display='none';target.appendChild(explanation);
  // The embedded checkpoint appears before the explanation, not duplicated afterward.
  if(index===selected.steps.length-1){
-  const p=el('div',null,'ts-practice');p.append(el('strong',selected.subject==='english'?'仕上げ：自分で英文を書いてみる':'仕上げ：解説を閉じて紙で解こう'),el('p',selected.practice[0]));
+  const p=el('div',null,'ts-practice');p.append(el('strong',selected.subject==='english'?'仕上げ：自分で英文を書いてみる':'仕上げ：解説を閉じて紙で解こう'),el('p','上の新しい問題を解き終えたら、必要に応じて下のヒント・解答を開いて確かめましょう。'));
   const d=el('details');d.append(el('summary','ヒント・解答を確認'),el('p','ヒント：'+selected.practice[1]),el('p','模範解答：'+selected.practice[2]));
   if(selected.subject==='english'){
    const label=el('label','✍️ 英文を最後まで書く（4択ではありません）','ts-write-label');
@@ -608,5 +634,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked,overview:!!x.overview})),version:'3.2.0'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked,overview:!!x.overview})),version:'3.4.0'};
 })();
