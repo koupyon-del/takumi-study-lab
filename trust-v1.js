@@ -262,7 +262,7 @@ css.textContent='.trust-help{border-top:1px solid #ddd;margin-top:12px;padding-t
 document.head.appendChild(css);
 const notice=make('p',undefined,'legend');notice.id='trust-paper-info';
 const paperScreen=document.getElementById('paper');
-if(paperScreen)paperScreen.insertBefore(notice,paperScreen.querySelector('input[type=file]')||paperScreen.firstChild);
+if(paperScreen)paperScreen.insertBefore(notice,paperScreen.querySelector('details')||paperScreen.querySelector('input[type=file]')||paperScreen.firstChild);
 
 /* EXTENSION_POINT */
 window.TakumiTrust={store,grade,score,priority,confirmed,refresh,summary,report:trustedReport,validatePaperPayload,importVerifiedPaperPayload};
