@@ -39,7 +39,7 @@ jobs:
           sleep 1
           timeout 45s "$BROWSER" --headless --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=16000 --dump-dom http://127.0.0.1:8765/tests/browser-smoke.html >/tmp/study-lab-smoke.txt 2>/tmp/study-lab-chrome.err
           grep -o -E 'PASS: [^<]+|FAIL: [^<]+' /tmp/study-lab-smoke.txt | tail -5 || true
-          grep -q 'PASS: 81 lessons, 11 overviews, math and English lecture screens' /tmp/study-lab-smoke.txt
+          grep -q '<p id="result">PASS: 81 lessons, 11 overviews, math and English lecture screens</p>' /tmp/study-lab-smoke.txt
           timeout 45s "$BROWSER" --headless --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=16000 --dump-dom http://127.0.0.1:8765/tests/browser-paper-smoke.html >/tmp/study-lab-paper-smoke.txt 2>/tmp/study-lab-chrome-paper.err
           grep -o -E 'PASS: [^<]+|FAIL: [^<]+' /tmp/study-lab-paper-smoke.txt | tail -5 || true
-          grep -q 'PASS: paper evidence preview, verified import and URL cleanup' /tmp/study-lab-paper-smoke.txt
+          grep -q '<p id="result">PASS: paper evidence preview, verified import and URL cleanup</p>' /tmp/study-lab-paper-smoke.txt
