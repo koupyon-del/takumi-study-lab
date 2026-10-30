@@ -52,6 +52,40 @@ document.getElementById('app').addEventListener('load',()=>{
   if(!mathLesson.textContent.includes('よくある間違い')||!mathLesson.textContent.includes('自分で確かめること'))throw Error('detailed math coaching notes missing');
   api.openLesson('en2-third-y','home');
   if(!d.getElementById('ts-video-screen').textContent.includes('study→studies'))throw Error('English lesson did not open');
+  // New navigation: a prominent Next button appears as soon as a worked stage is complete.
+  api.openLesson('add','home');
+  const lessonArea=d.getElementById('ts-video-screen');
+  let stepText=lessonArea.querySelector('#ts-stage-count').textContent;
+  if(!lessonArea.querySelector('#ts-inline-next')||lessonArea.querySelector('#ts-inline-next').style.display!=='none')
+   throw Error('in-stage Next must be hidden until lesson has been explained');
+  lessonArea.querySelector('#ts-reveal').click();
+  for(let i=0;i<12&&lessonArea.querySelector('#ts-next-line')?.style.display!=='none';i++)lessonArea.querySelector('#ts-next-line').click();
+  const move=lessonArea.querySelector('#ts-inline-next');
+  if(move?.style.display==='none'||move.disabled)throw Error('in-stage Next must appear after explanation');
+  move.click();
+  if(lessonArea.querySelector('#ts-stage-count').textContent===stepText)throw Error('in-stage Next did not advance');
+  // Quiz stage: only after the worked board, not before an answer.
+  api.openLesson('overview-simultaneous','home',10);
+  const checkbox=lessonArea.querySelector('#ts-auto-next');
+  if(!checkbox||checkbox.checked)throw Error('automatic advancing should be opt-in');
+  lessonArea.querySelector('#ts-reveal').click();
+  for(let i=0;i<12&&lessonArea.querySelector('#ts-next-line')?.style.display!=='none';i++)lessonArea.querySelector('#ts-next-line').click();
+  if(!lessonArea.querySelector('.ts-decision-choices')||lessonArea.querySelector('#ts-inline-next')?.style.display!=='none')throw Error('quiz should require a correct answer before Next');
+  lessonArea.querySelectorAll('.ts-decision-choices button')[0].click();
+  if(lessonArea.querySelector('#ts-inline-next')?.style.display==='none')throw Error('correct answer did not reveal in-stage Next');
+  if(lessonArea.querySelector('#ts-inline-next')?.disabled)throw Error('Next still disabled after correct answer');
+  const before=lessonArea.querySelector('#ts-stage-count').textContent;
+  lessonArea.querySelector('#ts-inline-next').click();
+  if(lessonArea.querySelector('#ts-stage-count').textContent===before)throw Error('correct-answer Next did not advance');
+  // Enable opt-in automatic advancing for the next lesson quiz, then verify it schedules.
+  api.openLesson('overview-simultaneous','home',10);
+  const autoCheck=lessonArea.querySelector('#ts-auto-next');autoCheck.click();
+  if(!autoCheck.checked)throw Error('auto-next checkbox cannot be enabled');
+  lessonArea.querySelector('#ts-reveal').click();
+  for(let i=0;i<12&&lessonArea.querySelector('#ts-next-line')?.style.display!=='none';i++)lessonArea.querySelector('#ts-next-line').click();
+  lessonArea.querySelectorAll('.ts-decision-choices button')[0].click();
+  if(!lessonArea.textContent.includes('約4秒後に次へ進みます'))throw Error('auto-next feedback absent');
+  lessonArea.querySelector('#ts-inline-next').click(); // manual progression must cancel the pending timer.
   output.textContent='PASS: 81 lessons, 11 overviews, math and English lecture screens';
  }catch(error){output.textContent='FAIL: '+String(error.message||error)}
 });
