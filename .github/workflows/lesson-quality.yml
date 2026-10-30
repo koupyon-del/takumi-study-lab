@@ -1,0 +1,27 @@
+name: Study Lab lesson quality
+on:
+  push:
+    branches:
+      - main
+      - fix/lesson-explanation-continuity-20261030
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  teaching-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse every application JavaScript file
+        shell: bash
+        run: |
+          set -euo pipefail
+          find . -maxdepth 1 -type f -name '*.js' -print0 | while IFS= read -r -d '' script; do
+            node --check "$script"
+          done
+      - name: Validate 81-lesson curriculum and independent exercises
+        run: node lesson-continuity-v6.test.cjs
