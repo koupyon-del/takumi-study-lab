@@ -43,7 +43,7 @@ const integrated = {window:{}};
 for(const file of bootFiles)vm.runInNewContext(fs.readFileSync(path.join(root,file),'utf8'),integrated,{filename:file});
 const cutoff = player.indexOf('const el=(tag,text,cls)=>{');
 assert.ok(cutoff>0,'Player assembly boundary must exist');
-vm.runInNewContext(player.slice(0,cutoff)+'\\nwindow.__testLessons=lessons;\\n})();',integrated,{filename:'video-lessons-math-v1.js'});
+vm.runInNewContext(player.slice(0,cutoff)+'\nwindow.__testLessons=lessons;\n})();',integrated,{filename:'video-lessons-math-v1.js'});
 const all=integrated.window.__testLessons;
 assert.equal(all.length,81,'All 81 tutorials must assemble successfully');
 assert.equal(all.filter(x=>x.overview).length,11,'Eleven overview tutorials must remain');
