@@ -1,0 +1,12 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const html=fs.readFileSync('index.html','utf8');
+const title=html.match(/<title>[^<]*?(v\d+(?:\.\d+)+)<\/title>/)?.[1];
+const badge=html.match(/id="studyLabVersionBadge"[^>]*>(v\d+(?:\.\d+)+)/)?.[1];
+const backup=html.match(/function backupPayload\(\).*?version:'(\d+(?:\.\d+)+)'/)?.[1];
+assert.ok(title,'Application must declare a document title version');
+assert.equal(badge,title,'Visible homepage badge must match document title');
+assert.equal(backup,title.slice(1),'Export backup metadata version must match release');
+assert.equal(title,'v3.7','Do not regress or prematurely claim an unshipped version');
+console.log('PASS: visible version '+title+' matches title and backup version');

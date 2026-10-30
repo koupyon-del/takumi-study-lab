@@ -23,6 +23,8 @@ jobs:
           find . -maxdepth 1 -type f -name '*.js' -print0 | while IFS= read -r -d '' script; do
             node --check "$script"
           done
+      - name: Verify displayed Study Lab version is consistent
+        run: node app-version.test.cjs
       - name: Verify paper evidence link import and deduplication
         run: node paper-link-v1.test.cjs
       - name: Verify private paper inbox sync and cloud acknowledgement
