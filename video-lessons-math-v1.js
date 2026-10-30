@@ -159,6 +159,7 @@ for(const [id,fix] of Object.entries(window.TakumiLessonContinuityFixes||{})){
 window.TakumiApplyMasterclass(lessons);
 // Expand the user's most error-prone maths units after all legacy patch layers.
 window.TakumiMathClarityV8.apply(lessons);
+window.TakumiTeachFirstV9.apply(lessons);
 const el=(tag,text,cls)=>{const x=document.createElement(tag);if(text!==undefined&&text!==null)x.textContent=String(text);if(cls)x.className=cls;return x};
 const screen=el('section',null,'screen ts-video-screen');screen.id='ts-video-screen';document.querySelector('.wrap').appendChild(screen);
 let selected=null,index=0,from='home',timer=null,auto=false,speed=1,answers=new Map(),decisionAnswers=new Map(),spoken=null,origin=null,catalogSubject='math',voiceMode=false;
@@ -216,9 +217,8 @@ function speak(override){
 }
 function speakPrompt(){
  const st=selected?.steps[index];if(!st||!voiceMode)return;
- const prompt=selected?.steps[index]?.[4]?.[0]||(!selected.deepDetailed&&!selected.continuityChecked&&window.TakumiTutorDecisions?.[selected.id]?.[index]?.prompt)||
-   (selected.continuityChecked?null:thinkQuestions[selected.id]?.[index])||'次に何をするか考えてください。';
- speak(st[0]+'。'+prompt+'。まず自分で考えて、選択してください。');
+ const isFinal=index===selected.steps.length-1;
+ speak(st[0]+'。'+(isFinal?'新しい問題を自力で解いてみましょう。':st[3]+'。まず説明と板書を確認しましょう。'));
 }
 function tick(){
  if(timer!==null)clearTimeout(timer);timer=null;
@@ -242,8 +242,8 @@ function paintPlayer(){
  screen.append(back,el('h2',selected.title),el('p',selected.level+'｜'+selected.subtitle+'｜'+selected.minutes,'ts-note'));
  const unit=window.TakumiDeepTeachingUnits?.[selected.subject]?.[selected.group];
  if(unit){
-  const pre=el('details',null,'ts-prereq');pre.open=!selected.overview;
-  pre.appendChild(el('summary','📖 解く前にここを理解｜'+unit.name));
+  const pre=el('details',null,'ts-prereq');pre.open=false;
+  pre.appendChild(el('summary','📖 必要なときに復習する前提知識｜'+unit.name));
   const inner=el('div',null,'ts-prereq-inner');
   inner.appendChild(el('p',unit.core,'ts-prereq-core'));
   const guide=el('ol',null,'ts-prereq-examples');
@@ -251,7 +251,7 @@ function paintPlayer(){
   inner.appendChild(guide);
   inner.appendChild(el('p','よくある誤り：'+unit.mistake,'ts-prereq-warning'));
   const qbox=el('div',null,'ts-prereq-quiz');
-  qbox.appendChild(el('strong','まずは前提を確かめよう'));
+  qbox.appendChild(el('strong','説明を読んだ後の任意チェック'));
   qbox.appendChild(el('p',unit.quiz[0]));
   const feedback=el('p','','ts-prereq-response');
   for(let j=0;j<unit.quiz[1].length;j++){
@@ -291,7 +291,7 @@ starter.type='button';starter.id='ts-voice-starter';starter.onclick=()=>{
  speakPrompt();
 };
 screen.appendChild(starter);
-screen.appendChild(el('p','まず考え方を聞き、選択してから板書の続きを表示します。録画動画ではなく端末の音声合成です。','ts-voice-help'));
+screen.appendChild(el('p','まず説明を読み、板書を一行ずつ確かめた後で理解度を確認します。録画動画ではなく端末の音声合成です。','ts-voice-help'));
  const stage=el('div',null,'ts-vstage');stage.id='ts-vstage';screen.appendChild(stage);
  const controls=el('div',null,'ts-vcontrols');
  const prev=el('button','← 前へ','secondary');prev.type='button';prev.id='ts-vprev';prev.onclick=()=>changeStep(-1);
@@ -318,6 +318,7 @@ if(selected.subject==='english'){
 function revealStep(){
  const stage=document.getElementById('ts-vstage');if(!stage)return;
  const prompt=stage.querySelector('.ts-think');if(prompt)prompt.style.display='none';
+ const open=stage.querySelector('#ts-reveal');if(open)open.style.display='none';
  const lineBtn=stage.querySelector('#ts-next-line');
  if(lineBtn)lineBtn.style.display='';
  const lines=[...stage.querySelectorAll('.ts-formula')];
@@ -329,7 +330,10 @@ function revealStep(){
 function showTeachingNotes(){
  const stage=document.getElementById('ts-vstage');if(!stage)return;
  for(const child of stage.querySelectorAll('.ts-after-think:not(.ts-formula)'))child.style.display='';
- const next=document.getElementById('ts-vnext');if(next)next.disabled=false;
+ const isFinal=index===selected.steps.length-1;
+ const confirm=stage.querySelector('.ts-think');if(confirm&&!isFinal)confirm.style.display='';
+ const next=document.getElementById('ts-vnext');
+ if(next)next.disabled=(!isFinal && !!stage.querySelector('.ts-decision-choices') && !decisionAnswers.has(index));
  const lineBtn=stage.querySelector('#ts-next-line');if(lineBtn)lineBtn.style.display='none';
 }
 function showNextLine(){
@@ -369,7 +373,13 @@ const thinkQuestions={
 function paintStep(){
  if(!selected)return;const st=selected.steps[index],target=document.getElementById('ts-vstage');if(!target)return;
  if(timer!==null)clearTimeout(timer);timer=null;target.replaceChildren();
+ const finalPractice=index===selected.steps.length-1;
  target.appendChild(el('h3',st[0]));
+ if(!finalPractice){
+  const lead=el('section',null,'ts-teach-before-quiz');
+  lead.append(el('strong','📖 まず教わる・読む'),el('p',st[2]));
+  target.appendChild(lead);
+ }
  const board=el('div',null,'ts-blackboard');
  for(const [j,line] of st[1].entries()){
   const special=line.startsWith('★'),good=line.startsWith('✓');
@@ -378,15 +388,14 @@ function paintStep(){
  }
  target.appendChild(board);
  const thought=el('div',null,'ts-think');
- const finalPractice=index===selected.steps.length-1;
  const builtInQuiz=finalPractice?null:st[4];
  const tutor=builtInQuiz?{prompt:builtInQuiz[0],options:builtInQuiz[1],correct:builtInQuiz[2],reason:builtInQuiz[3],wrong:builtInQuiz[4]}:
    ((selected.deepDetailed||selected.continuityChecked||finalPractice)?null:window.TakumiTutorDecisions?.[selected.id]?.[index]);
  const prompt=finalPractice?'ここからは新しい問題です。ノートに理由と途中式（英語なら主語・動詞・語順）を書き、答えを出してから確認しましょう。':(tutor?.prompt||(selected.continuityChecked?null:thinkQuestions[selected.id]?.[index])||'この場面の板書を見て、何をしたか・なぜ許されるかを自分の言葉で説明しよう。');
- const reveal=el('button',finalPractice?'自力で解いたので、答え合わせへ':'考えたので、解説を開く','secondary');reveal.type='button';reveal.id='ts-reveal';
- reveal.disabled=!!tutor&&decisionAnswers.get(index)===undefined;
+ const reveal=el('button',finalPractice?'自力で解いたので、答え合わせへ':'説明を読んだので、続きの板書を見る →','secondary ts-start-teaching');reveal.type='button';reveal.id='ts-reveal';
+ reveal.disabled=false;
  reveal.onclick=()=>{if(reveal.disabled)return;revealStep();if(voiceMode)speak(st[0]+'。'+st[3])};
- thought.append(el('strong','✏️ まず自分で考える'),el('p',prompt));
+ thought.append(el('strong',finalPractice?'✏️ 初見問題を自分で解く':'🧠 習ったあとの確認'),el('p',finalPractice?prompt:(tutor?.prompt||'ここまでの考え方を一言で説明してから次へ進もう。')));
  if(tutor){
   const options=el('div',null,'ts-decision-choices'),result=el('p','','ts-decision-feedback');
   const prior=decisionAnswers.get(index);
@@ -401,7 +410,7 @@ function paintStep(){
       decisionAnswers.set(index,j);
       for(const child of options.children)child.disabled=true;
       b.classList.add('ts-correct');
-      reveal.textContent='板書を一行ずつ開いて確かめる →';reveal.disabled=false;
+      const nextButton=document.getElementById('ts-vnext');if(nextButton)nextButton.disabled=false;
     }else{
       b.classList.add('ts-incorrect');b.disabled=true;
       if([...options.children].every(el=>el.disabled)){
@@ -415,9 +424,12 @@ function paintStep(){
     (prior===tutor.correct?tutor.reason:(tutor.wrong?.[prior]||tutor.reason));}
   thought.append(options,result);
  }
- thought.appendChild(reveal);target.appendChild(thought);
+ if(finalPractice){thought.appendChild(reveal);target.appendChild(thought);}
+ else{thought.style.display='none';target.appendChild(reveal);}
  const nextLine=el('button','次の式を1行ずつ表示 →','secondary ts-next-line');nextLine.id='ts-next-line';nextLine.type='button';nextLine.style.display='none';nextLine.onclick=()=>showNextLine();target.appendChild(nextLine);
- const explanation=el('p',st[2],'ts-explain ts-after-think');explanation.style.display='none';target.appendChild(explanation);
+ if(finalPractice){
+  const explanation=el('p',st[2],'ts-explain ts-after-think');explanation.style.display='none';target.appendChild(explanation);
+ }
  if(selected.subject==='math'&&st[5]&&st[5].trap&&st[5].check){
   const teacher=el('div',null,'ts-teacher-notes ts-after-think');
   const error=el('section',null,'ts-teacher-trap');
@@ -426,8 +438,9 @@ function paintStep(){
   check.append(el('strong','✓ 自分で確かめること'),el('p',st[5].check));
   teacher.append(error,check);teacher.style.display='none';target.appendChild(teacher);
  }
- // The embedded checkpoint appears before the explanation, not duplicated afterward.
- if(index===selected.steps.length-1){
+ // Quiz is shown only AFTER explanation and full worked board; final independent task is protected.
+ if(!finalPractice)target.appendChild(thought);
+ if(finalPractice){
   const p=el('div',null,'ts-practice');p.append(el('strong',selected.subject==='english'?'仕上げ：自分で英文を書いてみる':'仕上げ：解説を閉じて紙で解こう'),el('p','上の新しい問題を解き終えたら、必要に応じて下のヒント・解答を開いて確かめましょう。'));
   const d=el('details');d.append(el('summary','ヒント・解答を確認'),el('p','ヒント：'+selected.practice[1]),el('p','模範解答：'+selected.practice[2]));
   if(selected.subject==='english'){
@@ -537,7 +550,7 @@ function matchQuestion(q){
 function openForQuestion(q,source){
  const route=matchQuestion(q);if(!route)return false;
  const note='問題の該当単元を手掛かりに選んだ授業です。誤答原因を断定するものではありません。';
- openLesson(route.id,source||'quiz',route.step,{q:String(q.q||''),note});
+ openLesson(route.id,source||'quiz',0,{q:String(q.q||''),note});
  return true;
 }
 function attachQuestionLink(target,q,source,wrong){
@@ -610,6 +623,11 @@ const css=`
 .ts-highlight{color:#ffdd89}.ts-good{color:#99efc9}
 @keyframes ts-rise{from{opacity:0;transform:translateY(13px)}to{opacity:1;transform:translateY(0)}}
 .ts-explain{font-size:15px;line-height:1.95;margin:14px 2px;white-space:pre-wrap}
+.ts-teach-before-quiz{background:#f1f7ff;border:1px solid #afcbe7;padding:15px;margin:12px 0;border-radius:13px;line-height:1.9}
+.ts-teach-before-quiz strong{font-size:15px;color:#174666}
+.ts-teach-before-quiz p{font-size:15px;line-height:1.95;margin:8px 0 0;color:#253e52}
+.ts-start-teaching{width:100%;min-height:48px;margin:14px 0;font-weight:800}
+.ts-think{margin-top:16px!important}
 .ts-teacher-notes{display:grid;gap:10px;margin:8px 0 15px}
 .ts-teacher-notes section{padding:12px 14px;border-radius:11px;font-size:14px;line-height:1.8}
 .ts-teacher-notes strong{font-size:14px}
@@ -661,5 +679,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked,overview:!!x.overview})),version:'3.8.0'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked,overview:!!x.overview})),version:'3.9.0'};
 })();
