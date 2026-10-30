@@ -157,6 +157,8 @@ for(const [id,fix] of Object.entries(window.TakumiLessonContinuityFixes||{})){
  final.length=4;
 }
 window.TakumiApplyMasterclass(lessons);
+// Expand the user's most error-prone maths units after all legacy patch layers.
+window.TakumiMathClarityV8.apply(lessons);
 const el=(tag,text,cls)=>{const x=document.createElement(tag);if(text!==undefined&&text!==null)x.textContent=String(text);if(cls)x.className=cls;return x};
 const screen=el('section',null,'screen ts-video-screen');screen.id='ts-video-screen';document.querySelector('.wrap').appendChild(screen);
 let selected=null,index=0,from='home',timer=null,auto=false,speed=1,answers=new Map(),decisionAnswers=new Map(),spoken=null,origin=null,catalogSubject='math',voiceMode=false;
@@ -416,6 +418,14 @@ function paintStep(){
  thought.appendChild(reveal);target.appendChild(thought);
  const nextLine=el('button','次の式を1行ずつ表示 →','secondary ts-next-line');nextLine.id='ts-next-line';nextLine.type='button';nextLine.style.display='none';nextLine.onclick=()=>showNextLine();target.appendChild(nextLine);
  const explanation=el('p',st[2],'ts-explain ts-after-think');explanation.style.display='none';target.appendChild(explanation);
+ if(selected.subject==='math'&&st[5]&&st[5].trap&&st[5].check){
+  const teacher=el('div',null,'ts-teacher-notes ts-after-think');
+  const error=el('section',null,'ts-teacher-trap');
+  error.append(el('strong','⚠ よくある間違い'),el('p',st[5].trap));
+  const check=el('section',null,'ts-teacher-check');
+  check.append(el('strong','✓ 自分で確かめること'),el('p',st[5].check));
+  teacher.append(error,check);teacher.style.display='none';target.appendChild(teacher);
+ }
  // The embedded checkpoint appears before the explanation, not duplicated afterward.
  if(index===selected.steps.length-1){
   const p=el('div',null,'ts-practice');p.append(el('strong',selected.subject==='english'?'仕上げ：自分で英文を書いてみる':'仕上げ：解説を閉じて紙で解こう'),el('p','上の新しい問題を解き終えたら、必要に応じて下のヒント・解答を開いて確かめましょう。'));
@@ -537,6 +547,15 @@ function attachQuestionLink(target,q,source,wrong){
  b.setAttribute('aria-label',(wrong?'間違い直し：':'関連解説：')+route.title);
  b.onclick=()=>openForQuestion(q,source);
  target.appendChild(b);
+ if(wrong&&q&&String(q.u||'')&&state?.cat==='math'){
+  const tip=window.TakumiMathClarityV8.explainQuestion(q);
+  if(tip&&!target.querySelector('.ts-math-recovery')){
+   const recovery=el('section',null,'ts-math-recovery');
+   recovery.append(el('strong','🔎 '+tip.heading),
+     el('p',tip.why),el('p','よくある誤り：'+tip.pitfall),el('p','確認の手順：'+tip.route));
+   target.appendChild(recovery);
+  }
+ }
  return b;
 }
 const home=document.getElementById('home');
@@ -590,7 +609,15 @@ const css=`
 .ts-formula:nth-child(2){animation-delay:.2s}.ts-formula:nth-child(3){animation-delay:.4s}
 .ts-highlight{color:#ffdd89}.ts-good{color:#99efc9}
 @keyframes ts-rise{from{opacity:0;transform:translateY(13px)}to{opacity:1;transform:translateY(0)}}
-.ts-explain{font-size:15px;line-height:1.8;margin:14px 2px}
+.ts-explain{font-size:15px;line-height:1.95;margin:14px 2px;white-space:pre-wrap}
+.ts-teacher-notes{display:grid;gap:10px;margin:8px 0 15px}
+.ts-teacher-notes section{padding:12px 14px;border-radius:11px;font-size:14px;line-height:1.8}
+.ts-teacher-notes strong{font-size:14px}
+.ts-teacher-notes p{margin:4px 0 0}
+.ts-teacher-trap{background:#fff4e8;border:1px solid #eed2ad;color:#68411d}
+.ts-teacher-check{background:#edf8f1;border:1px solid #bbdac5;color:#215139}
+.ts-math-recovery{background:#f2f7ff;border:1px solid #bbcee8;padding:14px;border-radius:12px;margin:12px 0;line-height:1.85;color:#243b56}
+.ts-math-recovery p{font-size:14px;margin:7px 0}
 .ts-think{margin:12px 0 0;padding:15px;background:#fff5e8;border:1px solid #ead2af;border-radius:12px}
 .ts-think strong{font-size:15px;color:#694621}.ts-think p{line-height:1.7;font-size:14px}
 .ts-think button{width:100%;min-height:44px;background:#fff;font-weight:800}
@@ -634,5 +661,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked,overview:!!x.overview})),version:'3.4.0'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked,overview:!!x.overview})),version:'3.8.0'};
 })();
