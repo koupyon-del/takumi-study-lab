@@ -15,6 +15,7 @@ document.getElementById('app').addEventListener('load',()=>{
   const english=api.lessonList.find(l=>l.id==='en2-third-y');
   if(!math||!english)throw Error('masterclass lessons missing');
   api.openLibrary('home','math');
+  if(!d.getElementById('ts-video-screen').textContent.includes('一次不等式'))throw Error('math catalogue not visible');
   // In every lesson, teach before asking: the lesson's first view must show an explanation.
   api.openLesson('overview-simultaneous','home');
   let s=d.getElementById('ts-video-screen');
@@ -37,8 +38,7 @@ document.getElementById('app').addEventListener('load',()=>{
   if(!s.querySelector('.ts-teach-before-quiz'))throw Error('unrelated overview still asks before teaching');
   api.openLesson('en2-third-y','home');
   if(!s.querySelector('.ts-teach-before-quiz'))throw Error('English lessons still ask before teaching');
-  
-  if(!d.getElementById('ts-video-screen').textContent.includes('一次不等式'))throw Error('math catalogue not visible');
+
   api.openLesson('ineq2-negative','home');
   if(!d.getElementById('ts-video-screen').textContent.includes('不等式：負数で割る理由'))throw Error('math tutorial did not open');
   if(!d.getElementById('ts-reveal'))throw Error('missing explanation reveal');
