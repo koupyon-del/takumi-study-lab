@@ -8,5 +8,5 @@ const backup=html.match(/function backupPayload\(\).*?version:'(\d+(?:\.\d+)+)'/
 assert.ok(title,'Application must declare a document title version');
 assert.equal(badge,title,'Visible homepage badge must match document title');
 assert.equal(backup,title.slice(1),'Export backup metadata version must match release');
-assert.equal(title,'v3.7','Do not regress or prematurely claim an unshipped version');
+assert.equal(title,'v3.8','Do not regress or prematurely claim an unshipped version');
 console.log('PASS: visible version '+title+' matches title and backup version');
