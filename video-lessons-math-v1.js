@@ -200,6 +200,28 @@ function paintPlayer(){
  screen.replaceChildren();
  const back=el('button','← 授業一覧','back');back.type='button';back.onclick=()=>{stop();paintList()};
  screen.append(back,el('h2',selected.title),el('p',selected.level+'｜'+selected.subtitle+'｜'+selected.minutes,'ts-note'));
+ const unit=window.TakumiDeepTeachingUnits?.[selected.subject]?.[selected.group];
+ if(unit){
+  const pre=el('details',null,'ts-prereq');pre.open=!selected.overview;
+  pre.appendChild(el('summary','📖 解く前にここを理解｜'+unit.name));
+  const inner=el('div',null,'ts-prereq-inner');
+  inner.appendChild(el('p',unit.core,'ts-prereq-core'));
+  const guide=el('ol',null,'ts-prereq-examples');
+  for(const line of unit.pre)guide.appendChild(el('li',line));
+  inner.appendChild(guide);
+  inner.appendChild(el('p','よくある誤り：'+unit.mistake,'ts-prereq-warning'));
+  const qbox=el('div',null,'ts-prereq-quiz');
+  qbox.appendChild(el('strong','まずは前提を確かめよう'));
+  qbox.appendChild(el('p',unit.quiz[0]));
+  const feedback=el('p','','ts-prereq-response');
+  for(let j=0;j<unit.quiz[1].length;j++){
+   const b=el('button',unit.quiz[1][j],'secondary');
+   b.type='button';
+   b.onclick=()=>{feedback.textContent=(j===unit.quiz[2]?'正解です。':'もう一度、前提を読みましょう。')+unit.quiz[3]};
+   qbox.appendChild(b);
+  }
+  qbox.appendChild(feedback);inner.appendChild(qbox);pre.appendChild(inner);screen.appendChild(pre);
+ }
  if(selected.overview){
   const guide=el('div',null,'ts-overview-guide');
   guide.append(el('strong','📚 単元の総合授業'),el('p','基本の意味・理由・板書例・間違いやすい点・自力問題を一通り教えます。長ければ分けて学び、目次から気になる場面を復習できます。'));
@@ -281,17 +303,22 @@ function showNextLine(){
 }
 function speakEnglish(){
  const st=selected?.steps[index],status=document.getElementById('ts-audio-status');if(!st)return;
- const english=st[1].filter(x=>/[A-Za-z]{2,}/.test(x)).join('. ').replace(/[★✓①②]/g,'');
+ const isSentence=x=>/^[A-Za-z][A-Za-z0-9 .,!?'’:\-]+$/.test(String(x).trim())&&/[A-Za-z]{2}/.test(x);
+ const candidates=[...st[1],selected.practice[2]].map(x=>String(x).replace(/^[★✓①②]\s*/, '').trim());
+ const english=candidates.find(isSentence);
+ if(!english){if(status)status.textContent='この場面には発音用の英文がありません。前後の英文例を選んでください。';return}
  cancelAudio();
- if(!english){if(status)status.textContent='この場面には英文がありません。';return}
  try{
- if(!window.speechSynthesis||typeof window.SpeechSynthesisUtterance!=='function')throw Error('unsupported');
- const utterance=new window.SpeechSynthesisUtterance(english);utterance.lang='en-US';utterance.rate=Math.max(.62,Math.min(1.2,.78*speed));
- utterance.onerror=()=>{if(status)status.textContent='英語読み上げはこの端末で利用できません。'};
- spoken=utterance;window.speechSynthesis.speak(utterance);
- if(status)status.textContent='英語の例文を読み上げています。';
- }catch(e){if(status)status.textContent='英語読み上げはこの端末で利用できません。'}
+  if(!window.speechSynthesis||typeof window.SpeechSynthesisUtterance!=='function')throw Error('unsupported');
+  const utterance=new window.SpeechSynthesisUtterance(english);utterance.lang='en-US';utterance.rate=Math.max(.62,Math.min(1.2,.78*speed));
+  const voices=window.speechSynthesis.getVoices?.()||[];
+  const en=voices.find(v=>/^en[-_]/i.test(v.lang));if(en)utterance.voice=en;
+  utterance.onerror=()=>{if(status)status.textContent='英語音声が利用できません。端末の読み上げ設定をご確認ください。'};
+  spoken=utterance;window.speechSynthesis.speak(utterance);
+  if(status)status.textContent='発音例：'+english;
+ }catch(e){if(status)status.textContent='端末の英語音声を起動できませんでした。英文は画面に表示されています。'}
 }
+
 const thinkQuestions={
  coef:['どの文字を消せばよいだろう？','①を何倍すれば係数がそろう？','式を引くと何が消える？','残った文字をどう求める？','元の2本で確かめた？'],
  sub:['どの式なら文字を置き換えやすい？','yの代わりにどの式を入れる？','同類項はどうまとめる？','もう一方の文字を求めた？','2本とも成立する？'],
@@ -352,8 +379,30 @@ function paintStep(){
  const explanation=el('p',st[2],'ts-explain ts-after-think');explanation.style.display='none';target.appendChild(explanation);
  // The embedded checkpoint appears before the explanation, not duplicated afterward.
  if(index===selected.steps.length-1){
-  const p=el('div',null,'ts-practice');p.append(el('strong','仕上げ：解説を閉じて紙で解こう'),el('p',selected.practice[0]));
-  const d=el('details');d.append(el('summary','ヒント・解答を確認'),el('p','ヒント：'+selected.practice[1]),el('p','解答：'+selected.practice[2]));p.appendChild(d);p.classList.add('ts-after-think');p.style.display='none';target.appendChild(p)
+  const p=el('div',null,'ts-practice');p.append(el('strong',selected.subject==='english'?'仕上げ：自分で英文を書いてみる':'仕上げ：解説を閉じて紙で解こう'),el('p',selected.practice[0]));
+  const d=el('details');d.append(el('summary','ヒント・解答を確認'),el('p','ヒント：'+selected.practice[1]),el('p','模範解答：'+selected.practice[2]));
+  if(selected.subject==='english'){
+   const label=el('label','✍️ 英文を最後まで書く（4択ではありません）','ts-write-label');
+   const field=el('textarea');field.id='ts-english-write';field.rows=3;field.placeholder='主語と動詞を含む英文を入力してください。';field.setAttribute('aria-label','英文の自力練習');
+   label.appendChild(field);p.appendChild(label);
+   const compare=el('button','自分の英文と模範文を比較する','secondary ts-write-compare');compare.type='button';
+   const response=el('p','','ts-write-feedback');
+   compare.onclick=()=>{
+    const student=String(field.value||'').trim();
+    if(!student){response.textContent='まだ英文がありません。まず自分で1文を書いてください。';return}
+    const target=String(selected.practice[2]).trim();
+    const normalized=x=>x.toLowerCase().replace(/[’‘]/g,"'").replace(/[.?!,]/g,'').replace(/\s+/g,' ').trim();
+    const simple=/^[A-Za-z][A-Za-z0-9 ,.!?'’:\-]+$/.test(target);
+    if(simple&&normalized(student)===normalized(target)){
+      response.textContent='模範文と一致しました。なぜこの動詞の形・語順なのかも説明しましょう。';
+    }else{
+      response.textContent='模範文と比べ、主語・動詞の形・語順・時の言葉を確かめましょう。これは自動採点ではありません。';
+    }
+    d.open=true;
+   };
+   p.append(compare,response,el('p','※入力文は学力記録に加算しません。正確な自由記述採点ではないため、模範文と理由を見比べて直してください。','ts-note'));
+  }
+  p.appendChild(d);p.classList.add('ts-after-think');p.style.display='none';target.appendChild(p)
  }
  const progress=document.getElementById('ts-progress-fill');if(progress)progress.style.width=Math.round((index+1)/selected.steps.length*100)+'%';
  const ct=document.getElementById('ts-stage-count');if(ct)ct.textContent='場面 '+(index+1)+' / '+selected.steps.length;
@@ -516,6 +565,18 @@ const css=`
 .ts-next-line{width:100%;min-height:48px;margin:12px 0;background:#eef4f8;font-weight:750}
 .ts-vcontrols button:disabled{opacity:.45}
 .ts-en-pronounce{display:block;margin:10px 0;width:100%}
+.ts-prereq{border:1px solid #bcd4e5;border-radius:14px;background:#f0f7fc;margin:12px 0;padding:12px}
+.ts-prereq>summary{font-weight:800;cursor:pointer;line-height:1.6;color:#214d69}
+.ts-prereq-inner{padding:9px 2px 3px;line-height:1.75;font-size:14px}
+.ts-prereq-core{font-weight:650}.ts-prereq-examples{padding-left:22px}.ts-prereq-examples li{margin-bottom:5px}
+.ts-prereq-warning{padding:9px;border-left:3px solid #bd8b53;background:#fff8ed}
+.ts-prereq-quiz{background:#fff;padding:10px;border:1px solid #d5e2eb;border-radius:10px;display:grid;gap:7px}
+.ts-prereq-quiz button{min-height:40px;text-align:left;background:#fafcfe}
+.ts-prereq-response{font-size:13px;font-weight:650}
+.ts-write-label{display:block;font-weight:800;margin:14px 0 8px}
+.ts-write-label textarea{width:100%;font:inherit;min-height:95px;margin-top:9px;padding:12px;border:1px solid #afc4d5;border-radius:10px;background:white;color:#172b3c;line-height:1.6}
+.ts-write-compare{width:100%;min-height:46px;margin:8px 0}
+.ts-write-feedback{font-size:14px;font-weight:700;line-height:1.6}
 .ts-english-home{background:#f6f8ff;border-color:#d4dcf5}
 .ts-vcontrols{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
 .ts-vcontrols button{min-height:44px;font-size:13px;padding:8px}
@@ -534,5 +595,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked,overview:!!x.overview})),version:'3.0.0'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked,overview:!!x.overview})),version:'3.1.0'};
 })();
