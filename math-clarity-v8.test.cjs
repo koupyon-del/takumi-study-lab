@@ -40,7 +40,7 @@ assert.equal(api.explainQuestion({u:'架空の単元'}),null);
 const page=fs.readFileSync('./index.html','utf8');
 const player=fs.readFileSync('./video-lessons-math-v1.js','utf8');
 assert.ok(page.includes('math-clarity-v8.js?v=3800'),'Maths content must load');
-assert.ok(page.indexOf('math-clarity-v8.js')<page.indexOf('video-lessons-math-v1.js?v=3800'),'Maths module must load before player');
+assert.ok(page.indexOf('math-clarity-v8.js')<page.indexOf('video-lessons-math-v1.js?v=3900'),'Maths module must load before player');
 assert.ok(player.includes('TakumiMathClarityV8.apply(lessons)'),'Maths teacher content must actually be applied');
 assert.ok(player.includes('ts-teacher-trap')&&player.includes('ts-teacher-check'),'Detailed mistake and check panels must render');
 assert.ok(player.includes('ts-math-recovery'),'Incorrect answers must expose a recovery panel');

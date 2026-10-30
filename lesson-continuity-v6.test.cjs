@@ -26,7 +26,7 @@ assert.ok(player.includes('last.length=4'), 'Old checkpoint must not leak into i
 assert.ok(player.includes('selected.continuityChecked||finalPractice'), 'Old decisions must be disabled for rewritten tutorials');
 const html = fs.readFileSync(path.join(root,'index.html'),'utf8');
 assert.ok(html.includes('lesson-continuity-v6.js?v=3300'), 'New teaching content must be loaded');
-assert.ok(html.indexOf('lesson-continuity-v6.js?v=3300')<html.indexOf('video-lessons-math-v1.js?v=3800'),'Corrections must precede player');
+assert.ok(html.indexOf('lesson-continuity-v6.js?v=3300')<html.indexOf('video-lessons-math-v1.js?v=3900'),'Corrections must precede player');
 // Boot only the data assembly section of the player to catch missing IDs and mixing
 // across the complete course catalogue, without requiring a browser or speech APIs.
 const bootFiles = [
@@ -40,7 +40,7 @@ const bootFiles = [
  'lesson-continuity-v6.js',
  'lesson-masterclass-math-a-v7.js','lesson-masterclass-math-b-v7.js',
  'lesson-masterclass-english-a-v7.js','lesson-masterclass-english-b-v7.js',
- 'lesson-masterclass-practice-v7.js','lesson-masterclass-apply-v7.js','math-clarity-v8.js'
+ 'lesson-masterclass-practice-v7.js','lesson-masterclass-apply-v7.js','math-clarity-v8.js','lesson-teach-first-v9.js'
 ];
 const integrated = {window:{}};
 for(const file of bootFiles)vm.runInNewContext(fs.readFileSync(path.join(root,file),'utf8'),integrated,{filename:file});
