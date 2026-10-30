@@ -1,0 +1,27 @@
+<!doctype html><html lang="ja"><meta charset="utf-8"><title>Study Lab paper link smoke</title>
+<body><p id="result">PENDING</p><iframe id="app" width="380" height="640"></iframe>
+<script>
+const payload={schema:'takumi-study-lab-paper-v1',sourceDate:'2026-10-30',title:'採点テスト',
+ subjects:{math:{'連立方程式':'×','1次不等式':'△'},english:{'三単現':'○'}}};
+const bytes=new TextEncoder().encode(JSON.stringify(payload));
+const token=btoa(Array.from(bytes,x=>String.fromCharCode(x)).join('')).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const output=document.getElementById('result'),frame=document.getElementById('app');
+frame.addEventListener('load',()=>{
+ try{
+  const w=frame.contentWindow,d=frame.contentDocument,shade=d.querySelector('section[role="dialog"]');
+  if(!shade||!shade.textContent.includes('連立方程式')||!shade.textContent.includes('三単現'))throw Error('link preview missing');
+  if(Object.keys(w.TakumiTrust.store().paperEvents||{}).length)throw Error('unapproved grades were stored');
+  const apply=[...shade.querySelectorAll('button')].find(x=>x.textContent==='確認して取り込む');
+  if(!apply)throw Error('confirmation button missing');
+  apply.click();
+  const t=w.TakumiTrust.store();
+  if(t.paper.math?.['連立方程式']?.grade!=='weak')throw Error('math paper result missing');
+  if(t.paper.english?.['三単現']?.grade!=='good')throw Error('English paper result missing');
+  if(Object.keys(t.paperEvents).length!==3)throw Error('incorrect paper evidence count');
+  if(w.location.hash)throw Error('sensitive fragment not cleared');
+  output.textContent='PASS: paper evidence preview, verified import and URL cleanup';
+ }catch(e){output.textContent='FAIL: '+String(e.message||e)}
+});
+frame.src='../index.html#paper='+token;
+setTimeout(()=>{if(output.textContent==='PENDING')output.textContent='FAIL: timeout loading paper link'},12000);
+</script></body></html>
