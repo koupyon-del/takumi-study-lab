@@ -193,6 +193,53 @@ importPaper=function(ev){
  rd.onerror=()=>{alert('ファイルを読み込めませんでした');ev.target.value=''};
  rd.readAsText(f,'utf-8');
 };
+/* Show the recorded evidence date, never the device's current date.
+   Evidence time is a separate event-registration timestamp, not a test date. */
+function paperEventTime(at){
+ const ms=Number(at);
+ if(!ms||!Number.isFinite(ms))return '時刻記録なし';
+ return new Date(ms).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+const baseRenderPaper=renderPaper;
+renderPaper=function(){
+ baseRenderPaper();
+ const cat=state.cat,units=[...new Set((data[cat]||[]).map(q=>q.u))],rows=paperBody.querySelectorAll('.paperRow');
+ units.forEach((u,i)=>{
+  const entry=store().paper?.[cat]?.[u];
+  if(!entry||!rows[i])return;
+  const detail=make('p','採点日：'+(entry.sourceDate||'記録なし')+' ／ 登録：'+paperEventTime(entry.verifiedAt),'legend paper-record-date');
+  detail.style.cssText='margin:6px 0 0;line-height:1.5';
+  rows[i].appendChild(detail);
+ });
+ const page=document.getElementById('paper');
+ if(!page)return;
+ let section=document.getElementById('paperVerifiedHistory');
+ if(!section){
+  section=make('section',undefined,'qbox');
+  section.id='paperVerifiedHistory';
+  section.style.cssText='padding:14px;margin:15px 0;border:1px solid #ddd;border-radius:12px';
+  paperBody.insertAdjacentElement('afterend',section);
+ }
+ section.textContent='';
+ const heading=make('h3','紙教材の採点履歴（'+(labels[cat]||cat)+'）');
+ heading.style.cssText='font-size:15px;margin:0 0 8px';
+ section.appendChild(heading);
+ const ev=Object.values(store().paperEvents||{}).filter(x=>x&&x.cat===cat&&x.sourceDate)
+  .sort((a,b)=>String(b.sourceDate).localeCompare(String(a.sourceDate))||Number(b.verifiedAt||0)-Number(a.verifiedAt||0));
+ if(!ev.length){section.appendChild(make('p','この教科は採点履歴がありません。','legend'));return}
+ const details=make('details');
+ const preview=make('summary','採点履歴 '+ev.length+'件を見る（実施日・評価・登録日時）');
+ preview.style.cssText='cursor:pointer;font-size:13px;padding:5px 0';
+ details.appendChild(preview);
+ const gradeText={good:'○ 定着',maybe:'△ あやしい',weak:'× 要復習'};
+ for(const item of ev.slice(0,50)){
+  const line=make('p','採点日 '+item.sourceDate+'｜'+item.unit+'｜'+(gradeText[item.grade]||'評価不明')+'｜登録 '+paperEventTime(item.verifiedAt),'legend');
+  line.style.cssText='margin:7px 0;padding-bottom:6px;border-bottom:1px solid #eee';
+  details.appendChild(line);
+ }
+ if(ev.length>50)details.appendChild(make('p','直近50件を表示しています。','legend'));
+ section.appendChild(details);
+};
 const oldOpenPaper=openPaper;
 openPaper=function(cat){oldOpenPaper(cat);const info=document.getElementById('trust-paper-info');if(info)info.textContent='過去の紙評価は参考記録として保存されています。この画面の○△×は、保護者が確認して登録したものだけです。'};
 

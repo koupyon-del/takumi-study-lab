@@ -29,7 +29,10 @@ const context={
      let mode='read',change={};
      const query={
        select(){return this;},eq(){return this;},is(){return this;},order(){return this;},
-       limit(){return Promise.resolve({data:queue,error:null});},
+       not(){mode='history';return this;},
+       limit(){return Promise.resolve({data:mode==='history'?[
+         {...row('processed','parent_verified'),applied_at:'2026-10-30T14:49:09Z'}
+       ]:queue,error:null});},
        update(p){mode='update';change=p;return this;},
        then(resolve,reject){if(mode==='update'){ack.push({...change});return resolve({data:null,error:null})}return reject(Error('invalid'));}
      };return query;

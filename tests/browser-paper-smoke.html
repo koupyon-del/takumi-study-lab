@@ -23,6 +23,11 @@ frame.addEventListener('load',()=>{
   if(t.paper.english?.['三単現']?.grade!=='good')throw Error('English paper result missing');
   if(Object.keys(t.paperEvents).length!==3)throw Error('incorrect paper evidence count');
   if(w.location.hash)throw Error('sensitive fragment not cleared');
+  w.openPaper('math');
+  const dates=d.querySelectorAll('#paperBody .paper-record-date');
+  if(![...dates].some(x=>x.textContent.includes('採点日：2026-10-30')))throw Error('visible paper source date missing');
+  const history=d.querySelector('#paperVerifiedHistory');
+  if(!history||!history.textContent.includes('採点履歴')||!history.textContent.includes('実施日'))throw Error('paper history entry missing');
   output.textContent='PASS: paper evidence preview, verified import and URL cleanup';
  }catch(e){output.textContent='FAIL: '+String(e.message||e)}
 });

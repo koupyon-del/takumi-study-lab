@@ -18,7 +18,7 @@ const api={isMissingTable,requiredEventIds};
 root.TakumiPaperInbox=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(!root.document||!root.TakumiTrust)return;
-let polling=false,disabled=false,pending=[],lastStatus='';
+let polling=false,disabled=false,pending=[],recent=[],lastStatus='';
 const intervalMs=120000;
 function active(){return typeof cloudUser!=='undefined'&&cloudUser&&typeof cloudReady!=='undefined'&&cloudReady}
 function client(){return typeof sb!=='undefined'?sb:null}
@@ -38,13 +38,45 @@ function panel(){
  status.id='paperInboxStatus';status.className='legend';status.setAttribute('role','status');
  status.style.lineHeight='1.7';
  const list=root.document.createElement('div');list.id='paperInboxRows';
- p.append(h,status,list);
+ const history=root.document.createElement('div');history.id='paperInboxRecent';
+ p.append(h,status,list,history);
  const target=page.querySelector('.tabs')||page.querySelector('details')||page.lastChild;
  page.insertBefore(p,target);
  return p;
 }
 function setStatus(text){lastStatus=text;const p=panel();if(p)p.querySelector('#paperInboxStatus').textContent=text}
 function textNode(tag,label){const el=root.document.createElement(tag);el.textContent=label;return el}
+function localTime(value){
+ const d=value?new Date(value):null;
+ return d&&!Number.isNaN(d.getTime())?
+   d.toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):
+   '時刻記録なし';
+}
+function renderRecent(){
+ const p=panel();if(!p)return;
+ const area=p.querySelector('#paperInboxRecent');area.textContent='';
+ const heading=textNode('h4','最近の受信・同期履歴');heading.style.cssText='font-size:14px;margin:15px 0 6px';
+ area.appendChild(heading);
+ if(!recent.length){area.appendChild(textNode('p','同期済みの受信記録はまだありません。'));return}
+ for(const r of recent){
+  const box=root.document.createElement('div');
+  box.style.cssText='border-top:1px solid #eee;padding:9px 0;font-size:12px;line-height:1.65';
+  const date=r.payload?.sourceDate||'採点日記録なし';
+  const status=r.applied_at?'クラウド反映済み':r.dismissed_at?'除外':'未処理';
+  box.appendChild(textNode('strong',date+' 紙教材　'+status));
+  box.appendChild(textNode('p','受信：'+localTime(r.created_at)+' ／ 処理：'+localTime(r.applied_at||r.dismissed_at)));
+  area.appendChild(box);
+ }
+}
+async function loadRecent(){
+ const {data,error}=await client().from('paper_evidence_inbox')
+  .select('id,payload,created_at,applied_at,dismissed_at')
+  .eq('user_id',cloudUser.id).not('applied_at','is',null)
+  .order('applied_at',{ascending:false}).limit(8);
+ if(error)throw error;
+ recent=Array.isArray(data)?data:[];
+ renderRecent();
+}
 function humanGrade(grade){return {good:'○ 定着',maybe:'△ あやしい',weak:'× 要復習'}[grade]||grade}
 function preview(parsed){
  return parsed.items.map(x=>(typeof labels!=='undefined'?labels[x.cat]||x.cat:x.cat)+'／'+x.unit+' '+humanGrade(x.grade)).join('\n');
@@ -79,7 +111,8 @@ async function applyRow(row,approved){
   }
   await acknowledge(row,'applied_at');
   pending=pending.filter(x=>x.id!==row.id);
-  setStatus(parsed.items.length+'単元の採点結果をクラウドに反映しました。次回の問題選択に利用します。');
+  setStatus(parsed.sourceDate+'の紙教材 '+parsed.items.length+'単元をクラウドに反映しました。次回の問題選択に利用します。');
+  if(!polling)await loadRecent();
   render();
   return true;
  }catch(e){
@@ -141,10 +174,11 @@ async function poll(){
   for(const row of rows.filter(x=>x.review_status==='parent_verified')){
     if(await applyRow(row,false))imported++;else failed++;
   }
-  if(imported)setStatus(imported+'件の確認済み採点結果を自動反映しました。');
+  try{await loadRecent()}catch(e){console.warn('Paper inbox history unavailable:',e)}
+  if(imported)setStatus(imported+'件の確認済み採点結果を自動反映しました。履歴には採点日と処理日時を表示します。');
   else if(failed)setStatus('自動反映できなかった結果があります。学習履歴は保持し、次回再試行します。');
   else if(pending.length)setStatus('保護者の答案確認が必要な採点結果が'+pending.length+'件あります。');
-  else setStatus('自動受信は有効です。新しい採点結果を待っています。');
+  else setStatus('自動受信は有効です。新しい採点結果を待っています。処理済みの記録は下の履歴で確認できます。');
  }catch(e){setStatus('自動受信の確認に失敗しました。履歴は変更していません：'+String(e.message||e))}
  finally{polling=false}
 }
