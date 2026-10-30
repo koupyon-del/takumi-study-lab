@@ -1,0 +1,25 @@
+<!doctype html><html lang="ja"><meta charset="utf-8"><title>Study Lab browser smoke test</title>
+<body><p id="result">PENDING</p><iframe id="app" src="../index.html" width="350" height="650"></iframe>
+<script>
+const output=document.getElementById('result');
+document.getElementById('app').addEventListener('load',()=>{
+ try{
+  const frame=document.getElementById('app'),w=frame.contentWindow,d=frame.contentDocument;
+  const api=w.TakumiVideoLessons;
+  if(!api||api.lessonList.length!==81)throw Error('lesson list missing or incomplete');
+  if(api.lessonList.filter(l=>l.overview).length!==11)throw Error('overview count wrong');
+  const math=api.lessonList.find(l=>l.id==='ineq2-negative');
+  const english=api.lessonList.find(l=>l.id==='en2-third-y');
+  if(!math||!english)throw Error('masterclass lessons missing');
+  api.openLibrary('home','math');
+  if(!d.getElementById('ts-video-screen').textContent.includes('一次不等式'))throw Error('math catalogue not visible');
+  api.openLesson('ineq2-negative','home');
+  if(!d.getElementById('ts-video-screen').textContent.includes('不等式：負数で割る理由'))throw Error('math tutorial did not open');
+  if(!d.getElementById('ts-reveal'))throw Error('missing explanation reveal');
+  api.openLesson('en2-third-y','home');
+  if(!d.getElementById('ts-video-screen').textContent.includes('study→studies'))throw Error('English lesson did not open');
+  output.textContent='PASS: 81 lessons, 11 overviews, math and English lecture screens';
+ }catch(error){output.textContent='FAIL: '+String(error.message||error)}
+});
+setTimeout(()=>{if(output.textContent==='PENDING')output.textContent='FAIL: timeout loading application'},12000);
+</script></body></html>
