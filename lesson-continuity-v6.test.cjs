@@ -27,4 +27,29 @@ assert.ok(player.includes('selected.continuityChecked||finalPractice'), 'Old dec
 const html = fs.readFileSync(path.join(root,'index.html'),'utf8');
 assert.ok(html.includes('lesson-continuity-v6.js?v=3300'), 'New teaching content must be loaded');
 assert.ok(html.indexOf('lesson-continuity-v6.js?v=3300')<html.indexOf('video-lessons-math-v1.js?v=3300'),'Corrections must precede player');
-console.log('Passed: 9 lessons, stage continuity, separate self-test, integration order');
+// Boot only the data assembly section of the player to catch missing IDs and mixing
+// across the complete course catalogue, without requiring a browser or speech APIs.
+const bootFiles = [
+ 'math-lessons-foundations-v1.js','english-lessons-foundations-v1.js',
+ 'math-lessons-expansion-v2.js','english-lessons-expansion-v2.js',
+ 'lesson-rewrites-core-v3.js','lesson-rewrites-math-basics-v3.js',
+ 'lesson-rewrites-english-v3.js','lesson-quality-math-v4.js',
+ 'lesson-quality-english-v4.js','lesson-rewrites-all-extra-v3.js',
+ 'tutor-decisions-v1.js','lesson-audit-patches-v1.js','overview-lessons-v1.js',
+ 'lesson-depth-units-v5.js','math-detailed-worked-v5.js','english-detailed-grammar-v5.js',
+ 'lesson-continuity-v6.js'
+];
+const integrated = {window:{}};
+for(const file of bootFiles)vm.runInNewContext(fs.readFileSync(path.join(root,file),'utf8'),integrated,{filename:file});
+const cutoff = player.indexOf('const el=(tag,text,cls)=>{');
+assert.ok(cutoff>0,'Player assembly boundary must exist');
+vm.runInNewContext(player.slice(0,cutoff)+'\\nwindow.__testLessons=lessons;\\n})();',integrated,{filename:'video-lessons-math-v1.js'});
+const all=integrated.window.__testLessons;
+assert.equal(all.length,81,'All 81 tutorials must assemble successfully');
+assert.equal(all.filter(x=>x.overview).length,11,'Eleven overview tutorials must remain');
+assert.equal(all.filter(x=>x.continuityChecked).length,9,'Nine continuity fixes must be applied');
+for(const lesson of all){
+ assert.equal(lesson.steps.at(-1)[1].length,1,lesson.id+' must not leak an older example');
+ assert.equal(lesson.steps.at(-1)[1][0],lesson.practice[0],lesson.id+' independent question mismatch');
+}
+console.log('Passed: all 81 lessons, 9 rewritten tutorials, stage continuity and independent exercise checks');
