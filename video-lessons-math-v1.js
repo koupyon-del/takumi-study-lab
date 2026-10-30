@@ -96,6 +96,19 @@ for(const l of lessons){
  if(!l.steps||l.steps.length<4||!l.practice)throw Error('Invalid math lesson');
  for(const s of l.steps)if(!s[1].length||!s[2]||!s[3]||(s[4]&&(s[4][2]<0||s[4][2]>=s[4][1].length)))throw Error('Invalid slide');
 }
+// Add lesson-specific, teacher-authored explanations after the generic revisions.
+for(const [id,extra] of Object.entries(window.TakumiDetailedMathSteps||{})){
+ const lesson=lessons.find(l=>l.id===id);if(!lesson)throw Error('Missing deep math lesson '+id);
+ if(!extra.length||extra.some(st=>!Array.isArray(st[1])||st[1].length<2||!st[2]||!st[3]))throw Error('Invalid deep math data '+id);
+ lesson.steps.splice(1,0,...extra);
+ lesson.minutes='約12〜18分・分割可';lesson.deepDetailed=true;
+}
+for(const [id,extra] of Object.entries(window.TakumiDetailedEnglishSteps||{})){
+ const lesson=lessons.find(l=>l.id===id);if(!lesson)throw Error('Missing deep English lesson '+id);
+ if(!extra.length||extra.some(st=>!Array.isArray(st[1])||st[1].length<2||!st[2]||!st[3]))throw Error('Invalid deep English data '+id);
+ lesson.steps.splice(1,0,...extra);
+ lesson.minutes='約12〜18分・分割可';lesson.deepDetailed=true;
+}
 // Explicit teacher review runs after all rewrites and enrichment are merged.
 const audited=window.TakumiLessonAuditPatches||{};
 for(const l of lessons){
@@ -176,7 +189,7 @@ function speak(override){
 }
 function speakPrompt(){
  const st=selected?.steps[index];if(!st||!voiceMode)return;
- const prompt=selected?.steps[index]?.[4]?.[0]||window.TakumiTutorDecisions?.[selected.id]?.[index]?.prompt||
+ const prompt=selected?.steps[index]?.[4]?.[0]||(!selected.deepDetailed&&window.TakumiTutorDecisions?.[selected.id]?.[index]?.prompt)||
    thinkQuestions[selected.id]?.[index]||'次に何をするか考えてください。';
  speak(st[0]+'。'+prompt+'。まず自分で考えて、選択してください。');
 }
@@ -340,7 +353,7 @@ function paintStep(){
  const thought=el('div',null,'ts-think');
  const builtInQuiz=st[4];
  const tutor=builtInQuiz?{prompt:builtInQuiz[0],options:builtInQuiz[1],correct:builtInQuiz[2],reason:builtInQuiz[3],wrong:builtInQuiz[4]}:
-   window.TakumiTutorDecisions?.[selected.id]?.[index];
+   (selected.deepDetailed?null:window.TakumiTutorDecisions?.[selected.id]?.[index]);
  const prompt=tutor?.prompt||thinkQuestions[selected.id]?.[index]||'この次に何をすべきか、理由と一緒に予想しよう。';
  const reveal=el('button','考えたので、解説を開く','secondary');reveal.type='button';reveal.id='ts-reveal';
  reveal.disabled=!!tutor&&decisionAnswers.get(index)===undefined;
@@ -595,5 +608,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked,overview:!!x.overview})),version:'3.1.0'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked,overview:!!x.overview})),version:'3.2.0'};
 })();
