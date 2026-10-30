@@ -206,8 +206,8 @@ function speak(override){
 }
 function speakPrompt(){
  const st=selected?.steps[index];if(!st||!voiceMode)return;
- const prompt=selected?.steps[index]?.[4]?.[0]||(!selected.deepDetailed&&window.TakumiTutorDecisions?.[selected.id]?.[index]?.prompt)||
-   thinkQuestions[selected.id]?.[index]||'次に何をするか考えてください。';
+ const prompt=selected?.steps[index]?.[4]?.[0]||(!selected.deepDetailed&&!selected.continuityChecked&&window.TakumiTutorDecisions?.[selected.id]?.[index]?.prompt)||
+   (selected.continuityChecked?null:thinkQuestions[selected.id]?.[index])||'次に何をするか考えてください。';
  speak(st[0]+'。'+prompt+'。まず自分で考えて、選択してください。');
 }
 function tick(){
@@ -371,8 +371,8 @@ function paintStep(){
  const finalPractice=index===selected.steps.length-1;
  const builtInQuiz=finalPractice?null:st[4];
  const tutor=builtInQuiz?{prompt:builtInQuiz[0],options:builtInQuiz[1],correct:builtInQuiz[2],reason:builtInQuiz[3],wrong:builtInQuiz[4]}:
-   ((selected.deepDetailed||finalPractice)?null:window.TakumiTutorDecisions?.[selected.id]?.[index]);
- const prompt=finalPractice?'ここからは新しい問題です。ノートに理由と途中式（英語なら主語・動詞・語順）を書き、答えを出してから確認しましょう。':(tutor?.prompt||thinkQuestions[selected.id]?.[index]||'この次に何をすべきか、理由と一緒に予想しよう。');
+   ((selected.deepDetailed||selected.continuityChecked||finalPractice)?null:window.TakumiTutorDecisions?.[selected.id]?.[index]);
+ const prompt=finalPractice?'ここからは新しい問題です。ノートに理由と途中式（英語なら主語・動詞・語順）を書き、答えを出してから確認しましょう。':(tutor?.prompt||(selected.continuityChecked?null:thinkQuestions[selected.id]?.[index])||'この場面の板書を見て、何をしたか・なぜ許されるかを自分の言葉で説明しよう。');
  const reveal=el('button',finalPractice?'自力で解いたので、答え合わせへ':'考えたので、解説を開く','secondary');reveal.type='button';reveal.id='ts-reveal';
  reveal.disabled=!!tutor&&decisionAnswers.get(index)===undefined;
  reveal.onclick=()=>{if(reveal.disabled)return;revealStep();if(voiceMode)speak(st[0]+'。'+st[3])};
