@@ -57,4 +57,15 @@ for(const lesson of all){
  assert.equal(lesson.steps.at(-1)[1].length,1,lesson.id+' must not leak an older example');
  assert.equal(lesson.steps.at(-1)[1][0],lesson.practice[0],lesson.id+' independent question mismatch');
 }
+const filler = /操作を飛ばさず|正しく判断すると|なぜこの操作が成立するか確認|典型的な誤り：|間違いやすい点：|構造に注目しましょう/;
+for(const lesson of all){
+ for(const stage of lesson.steps.slice(0,-1)){
+  assert.doesNotMatch(stage[2],filler,lesson.id+' contains a placeholder in '+stage[0]);
+  if(lesson.masterclassChecked)assert.ok(stage[2].length>=40,lesson.id+' has incomplete teacher explanation');
+ }
+ const normalize = str => String(str).replace(/[\\s　。、：:「」『』()（）＋+−\-=＝]/g,'').toLowerCase();
+ const question=normalize(lesson.practice[0]);
+ const earlier=normalize(lesson.steps.slice(0,-1).flatMap(stage=>stage[1]).join(' '));
+ assert.ok(question.length<8||!earlier.includes(question),lesson.id+' repeats a solved problem as new practice');
+}
 console.log('Passed: all 81 lessons, 70 rewritten tutorials, 11 overviews, independent exercise isolation');
