@@ -26,7 +26,7 @@ assert.ok(player.includes('last.length=4'), 'Old checkpoint must not leak into i
 assert.ok(player.includes('selected.continuityChecked||finalPractice'), 'Old decisions must be disabled for rewritten tutorials');
 const html = fs.readFileSync(path.join(root,'index.html'),'utf8');
 assert.ok(html.includes('lesson-continuity-v6.js?v=3300'), 'New teaching content must be loaded');
-assert.ok(html.indexOf('lesson-continuity-v6.js?v=3300')<html.indexOf('video-lessons-math-v1.js?v=3300'),'Corrections must precede player');
+assert.ok(html.indexOf('lesson-continuity-v6.js?v=3300')<html.indexOf('video-lessons-math-v1.js?v=3400'),'Corrections must precede player');
 // Boot only the data assembly section of the player to catch missing IDs and mixing
 // across the complete course catalogue, without requiring a browser or speech APIs.
 const bootFiles = [
