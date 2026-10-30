@@ -29,6 +29,8 @@ jobs:
         run: node paper-link-v1.test.cjs
       - name: Verify maths reasoning, misconception checks, and practice separation
         run: node math-clarity-v8.test.cjs
+      - name: Check teaching-first introductory lessons and checkpoints
+        run: node lesson-teach-first-v9.test.cjs
       - name: Verify private paper inbox sync and cloud acknowledgement
         run: node paper-inbox-v1.test.cjs
       - name: Validate 81-lesson curriculum and independent exercises
