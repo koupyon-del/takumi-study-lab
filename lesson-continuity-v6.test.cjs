@@ -37,7 +37,10 @@ const bootFiles = [
  'lesson-quality-english-v4.js','lesson-rewrites-all-extra-v3.js',
  'tutor-decisions-v1.js','lesson-audit-patches-v1.js','overview-lessons-v1.js',
  'lesson-depth-units-v5.js','math-detailed-worked-v5.js','english-detailed-grammar-v5.js',
- 'lesson-continuity-v6.js'
+ 'lesson-continuity-v6.js',
+ 'lesson-masterclass-math-a-v7.js','lesson-masterclass-math-b-v7.js',
+ 'lesson-masterclass-english-a-v7.js','lesson-masterclass-english-b-v7.js',
+ 'lesson-masterclass-practice-v7.js','lesson-masterclass-apply-v7.js'
 ];
 const integrated = {window:{}};
 for(const file of bootFiles)vm.runInNewContext(fs.readFileSync(path.join(root,file),'utf8'),integrated,{filename:file});
@@ -47,9 +50,11 @@ vm.runInNewContext(player.slice(0,cutoff)+'\nwindow.__testLessons=lessons;\n})()
 const all=integrated.window.__testLessons;
 assert.equal(all.length,81,'All 81 tutorials must assemble successfully');
 assert.equal(all.filter(x=>x.overview).length,11,'Eleven overview tutorials must remain');
-assert.equal(all.filter(x=>x.continuityChecked).length,9,'Nine continuity fixes must be applied');
+assert.equal(all.filter(x=>x.continuityChecked).length,70,'All 70 individual lessons must be rewritten');
+assert.equal(all.filter(x=>x.masterclassChecked).length,61,'Sixty-one masterclasses must be applied');
+assert.equal(all.filter(x=>x.overview).length,11,'Eleven overviews must remain available');
 for(const lesson of all){
  assert.equal(lesson.steps.at(-1)[1].length,1,lesson.id+' must not leak an older example');
  assert.equal(lesson.steps.at(-1)[1][0],lesson.practice[0],lesson.id+' independent question mismatch');
 }
-console.log('Passed: all 81 lessons, 9 rewritten tutorials, stage continuity and independent exercise checks');
+console.log('Passed: all 81 lessons, 70 rewritten tutorials, 11 overviews, independent exercise isolation');
