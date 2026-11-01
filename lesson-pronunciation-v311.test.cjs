@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const player=fs.readFileSync('video-lessons-math-v1.js','utf8');
+const start=player.indexOf('function speakEnglish(){');
+const end=player.indexOf('const thinkQuestions=',start);
+assert.ok(start>0&&end>start,'Pronunciation implementation missing');
+const speak=player.slice(start,end);
+assert.ok(speak.includes("querySelectorAll('.ts-formula')"),'Pronunciation must read the actual currently rendered board');
+assert.ok(speak.includes("line.style.display!=='none'"),'Pronunciation must not read not-yet-shown explanation lines');
+assert.ok(speak.includes('line.textContent'),'Pronunciation must speak only actual visible lines');
+assert.doesNotMatch(speak,/candidates\s*=\s*\[\.\.\.st\[1\]/,'Full unrevealed stage must not be passed to speech');
+assert.doesNotMatch(speak,/(?:\.\.\.\s*)?selected\.practice\[2\](?!:)/,'Independent answer must never be a pronunciation fallback');
+assert.ok(player.includes("version:'3.11.0'"),'Pronunciation safeguard release version must be updated');
+console.log('PASS: English audio can only pronounce visible board lines and never uses future independent answers');

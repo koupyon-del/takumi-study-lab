@@ -368,9 +368,13 @@ function showNextLine(){
 function speakEnglish(){
  const st=selected?.steps[index],status=document.getElementById('ts-audio-status');if(!st)return;
  const isSentence=x=>/^[A-Za-z][A-Za-z0-9 .,!?'’:\-]+$/.test(String(x).trim())&&/[A-Za-z]{2}/.test(x);
- const candidates=[...st[1],selected.practice[2]].map(x=>String(x).replace(/^[★✓①②]\s*/, '').trim());
+ // Only pronounce what the student can already see; never read the final practice's answer.
+ const stage=document.getElementById('ts-vstage');
+ const candidates=[...(stage?.querySelectorAll('.ts-formula')||[])]
+  .filter(line=>line.style.display!=='none')
+  .map(line=>String(line.textContent).replace(/^[★✓①②]\s*/, '').trim());
  const english=candidates.find(isSentence);
- if(!english){if(status)status.textContent='この場面には発音用の英文がありません。前後の英文例を選んでください。';return}
+ if(!english){if(status)status.textContent='この場面に表示済みの英文はありません。板書を進めて例文を表示してください。仕上げ問題の答えは読み上げません。';return}
  cancelAudio();
  try{
   if(!window.speechSynthesis||typeof window.SpeechSynthesisUtterance!=='function')throw Error('unsupported');
@@ -713,5 +717,5 @@ const css=`
 @media(prefers-reduced-motion:reduce){.ts-formula{animation:none}.ts-progress-bar{transition:none}}
 `;
 document.head.appendChild(el('style',css));
-window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked,overview:!!x.overview})),version:'3.10.0'};
+window.TakumiVideoLessons={openLibrary:openList,openLesson,openForQuestion,matchQuestion,attachQuestionLink,lessonList:lessons.map(x=>({id:x.id,subject:x.subject,group:x.group,title:x.title,level:x.level,steps:x.steps.length,qualityChecked:!!x.qualityChecked,overview:!!x.overview})),version:'3.11.0'};
 })();

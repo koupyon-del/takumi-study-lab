@@ -33,6 +33,8 @@ jobs:
         run: node lesson-teach-first-v9.test.cjs
       - name: Verify in-lesson Next controls and optional auto-advance
         run: node lesson-navigation-v310.test.cjs
+      - name: Verify English speech cannot reveal hidden answers
+        run: node lesson-pronunciation-v311.test.cjs
       - name: Verify private paper inbox sync and cloud acknowledgement
         run: node paper-inbox-v1.test.cjs
       - name: Validate 81-lesson curriculum and independent exercises

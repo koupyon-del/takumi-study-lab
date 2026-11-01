@@ -18,8 +18,8 @@ const expectations=[
  ['avoid altering grading records', 'window.TakumiVideoLessons=']
 ];
 for(const [name,needle] of expectations)assert.ok(js.includes(needle),name+' is absent');
-assert.ok(html.includes('<title>巧澄 Study Lab v3.10</title>'));
-assert.ok(html.includes('video-lessons-math-v1.js?v=31000'));
+assert.ok(html.includes('<title>巧澄 Study Lab v3.11</title>'));
+assert.ok(html.includes('video-lessons-math-v1.js?v=31100'));
 assert.ok(smoke.includes('correct answer did not reveal in-stage Next'));
 assert.ok(smoke.includes('automatic advancing should be opt-in'));
 assert.ok(smoke.includes('auto-next feedback absent'));
