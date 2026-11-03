@@ -294,7 +294,12 @@ function confirmSubject(cat){
  c.updatedAt=t;save();drawStudyPlan(cat);drawCards();
 }
 function tier(cat,u){return topicPlan[cat]?.find(t=>t[0]===u)?.[1]||'授業'}
+/* Japanese reading is paused by parent instruction until prose quality is verified.
+   Keep source questions and study journals; filter selection only. */
+const pausedJapaneseUnits=new Set(['読解の基本','説明文・論説文','小説の心情','情報を関係づける','トロッコ','少年の日の思い出','竹取物語']);
+function isReadingPaused(cat,u){return cat==='japanese'&&pausedJapaneseUnits.has(u)}
 function isAllowed(cat,q,mode){
+ if(isReadingPaused(cat,q.u))return false;
  if(mode==='exam')return window.TakumiExam?.isAllowed(cat,q)===true;
  if((mode==='mi'||mode==='challenge')&&cfg().strictOnly&&!isConfirmed(cat,q.u))return false;
  const st=status(cat,q.u),t=tier(cat,q.u);
@@ -499,6 +504,6 @@ document.head.appendChild(style);
 window.setStudyMode=setStudyMode;
 window.openStudyPlan=openStudyPlan;
 window.launchFoundationCheck=launchFoundationCheck;
-window.TakumiCurriculum={drawCards,drawMode,status,isAllowed,isConfirmed,confirmedCount,confirmSubject,mode(){return cfg().mode},refresh(){drawMode();drawCards();const plan=document.getElementById('studyplan');if(plan?.classList?.contains('active')){const active=document.querySelector('[data-plan-subj].on');drawStudyPlan(active?.dataset?.planSubj||'math');}}};
+window.TakumiCurriculum={drawCards,drawMode,status,isAllowed,isReadingPaused,isConfirmed,confirmedCount,confirmSubject,mode(){return cfg().mode},refresh(){drawMode();drawCards();const plan=document.getElementById('studyplan');if(plan?.classList?.contains('active')){const active=document.querySelector('[data-plan-subj].on');drawStudyPlan(active?.dataset?.planSubj||'math');}}};
 drawMode();drawCards();drawStudyPlan('math');
 })();
