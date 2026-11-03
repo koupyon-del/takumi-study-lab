@@ -36,7 +36,11 @@ rec=function(id){const r=oldRec(id);if(r&&typeof r==='object')refs.set(r,id);ret
 function grade(cat,u){return store().paper?.[cat]?.[u]?.grade||''}
 function confirmed(r){
  const id=refs.get(r),x=id&&unitOf[id];if(!x)return false;
- const s=score(id);return grade(x.cat,x.u)==='good'&&s.good>=2&&s.days.size>=2;
+ const s=score(id),paper=store().paper?.[x.cat]?.[x.u];
+ // A tutor's provisional photo grade informs practice priority, but cannot by
+ // itself certify independent mastery without parent verification.
+ if(String(paper?.source||'').startsWith('tutor_reviewed_'))return false;
+ return grade(x.cat,x.u)==='good'&&s.good>=2&&s.days.size>=2;
 }
 mastered=function(r){return confirmed(r)};
 paperGrade=function(cat,u){return grade(cat,u)};
@@ -46,7 +50,7 @@ function priority(q,cat){
  if(x.self===0&&x.seen)p+=12;
  if(x.lastConfidence==='again')p+=30;else if(x.lastConfidence==='maybe')p+=15;
  if(g==='weak')p+=52;else if(g==='maybe')p+=29;else if(g==='good')p-=12;
- if(g==='good'&&x.good>=2&&x.days.size>=2)p-=40;
+ if(g==='good'&&x.good>=2&&x.days.size>=2&&!String(store().paper?.[cat]?.[q.u]?.source||'').startsWith('tutor_reviewed_'))p-=40;
  return p+Math.random()*10;
 }
 /* Store every selected answer immediately as provisional, then refine the SAME
@@ -241,7 +245,7 @@ renderPaper=function(){
  section.appendChild(details);
 };
 const oldOpenPaper=openPaper;
-openPaper=function(cat){oldOpenPaper(cat);const info=document.getElementById('trust-paper-info');if(info)info.textContent='過去の紙評価は参考記録として保存されています。この画面の○△×は、保護者が確認して登録したものだけです。'};
+openPaper=function(cat){oldOpenPaper(cat);const info=document.getElementById('trust-paper-info');if(info)info.textContent='過去の紙評価は参考記録として保存されています。この画面の○△×には、保護者確認済みの評価と家庭教師が答案から採点した暫定評価があります。出所を区別して記録し、暫定評価だけで自力定着とは判定しません。'};
 
 
 function statFor(cat,unit){
@@ -261,7 +265,7 @@ unitStat=function(cat,u){return statFor(cat,u)};
 function evidenceCount(){return Object.values(store().paper).reduce((n,p)=>n+Object.keys(p||{}).length,0)}
 function summary(){
  const a=values(),self=a.filter(e=>e.help==='self');
- return '新しい回答：'+a.length+'件（自力申告 '+self.length+'件）／保護者確認済み紙課題：'+evidenceCount()+'単元。これまでの回答 '+db.played+'件は履歴として保存中。';
+ return '新しい回答：'+a.length+'件（自力申告 '+self.length+'件）／紙教材の評価記録（保護者確認・家庭教師評価を区別）：'+evidenceCount()+'単元。これまでの回答 '+db.played+'件は履歴として保存中。';
 }
 updateStats=function(){
  const a=values().filter(e=>e.help==='self');
@@ -297,7 +301,7 @@ function trustedReport(){
   }
   lines.push('');
  }
- lines.push('【判定ルール】本人申告の正解は暫定。保護者確認済み紙課題を優先。過去のアプリ正答率は信用しない。');
+ lines.push('【判定ルール】本人申告の正解は暫定。紙教材は保護者確認済みと家庭教師の暫定評価を出所で区別する。未確認の自力定着を確定しない。過去の不確かなアプリ正答率は学力評価に使わない。');
  return lines.join('\n');
 }
 buildReport=trustedReport;
