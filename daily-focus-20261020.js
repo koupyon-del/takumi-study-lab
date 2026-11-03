@@ -6,7 +6,10 @@
 const tasks=[
  {cat:'math',units:['正負の数','指数・累乗','分数・小数','文字式','一次方程式','分数方程式','連立方程式'],title:'朝：数学の基礎 10問',note:'途中式は紙に書いて確認。連立方程式も基礎から復習します。'},
  {cat:'math',units:['連立方程式','1次不等式','図形の性質と合同','証明'],title:'放課後：数量・幾何 10問',note:'学校範囲を優先。合同の証明は別紙で理由まで書いて確認します。'},
- {cat:'english',units:['be動詞','一般動詞','疑問文・否定文','三単現','現在進行形'],title:'放課後：英文法 10問',note:'do/does、動詞の形と語順を確認。読解は紙と速単で学びます。'}
+ {cat:'english',units:['be動詞','一般動詞','疑問文・否定文','三単現','現在進行形'],title:'放課後：英文法 10問',note:'do/does、動詞の形と語順を確認。読解は紙と速単で学びます。'},
+ {cat:'science',units:['動物の分類','動物の進化','気象・水蒸気','気象・湿度','気象・雲','気象・観測','気象・総合'],count:5,title:'理社・選択：理科5問',note:'週の中で歴史・地理と交替。気象・動物を学校範囲の紙教材で確認し、アプリは小テストとして使います。'},
+ {cat:'history',units:['武士の成長','鎌倉幕府','鎌倉文化・仏教'],count:5,title:'理社・選択：歴史5問',note:'理科・地理と交替。時代のつながり・理由は紙教材で説明し、アプリでは知識を確認します。'},
+ {cat:'geography',units:['世界の気候','世界の生活・文化','緯度・経度と時差'],count:5,title:'理社・選択：地理5問',note:'理科・歴史と交替。地図・資料の読み取りは紙教材で補います。'}
 ];
 function allowedPool(task){
  const statuses=window.TakumiCurriculum;
@@ -54,7 +57,7 @@ function plan(task,ev){
  // Retain enough distinct questions to give a complete 10-question session.
  for(let i=3;i<ranked.length;i++){
   const unique=window.TakumiQuality?.uniqueCount?.(task.cat,pool)??pool.length;
-  if(unique>=10)break;
+  if(unique>=(task.count||10))break;
   chosen.push(ranked[i].u);
   pool=all.filter(q=>chosen.includes(q.u));
  }
@@ -64,8 +67,9 @@ function focusPool(task){return plan(task,evidence()).pool}
 function runTask(index){
  const task=tasks[index];if(!task)return;
  const p=plan(task,evidence());
- const picked=window.TakumiQuality?.select?.(task.cat,10,p.pool,task.cat==='english'?'mi':'foundation');
- const chosen=Array.isArray(picked)&&picked.length?picked:p.pool.slice(0,10);
+ const count=task.count||10;
+ const picked=window.TakumiQuality?.select?.(task.cat,count,p.pool,task.cat==='math'?'foundation':'mi');
+ const chosen=Array.isArray(picked)&&picked.length?picked:p.pool.slice(0,count);
  if(!chosen.length){alert('対象問題がありません。授業進度や出題設定を確認してください。');return}
  state.cat=task.cat;state.set=chosen;state.i=0;state.score=0;state.locked=false;
  state.session=++db.sessions;db.quizUpdatedAt=Date.now();save();
@@ -77,7 +81,7 @@ const heading=document.createElement('h3');heading.textContent='個別補習メ�
 const intro=document.createElement('p');intro.textContent='クラウド公開済みの家庭教師方針、保護者確認済みの紙評価、自力回答、授業進度から、重点単元を毎回選び直します。4択だけで定着とは判定しません。';
 const updated=document.createElement('p');updated.className='ts-focus-updated';
 const list=document.createElement('div');list.className='ts-task-list';
-const foot=document.createElement('p');foot.className='ts-foot';foot.textContent='学校の宿題と紙教材が優先です。合唱祭などで時間が足りない日は短縮して構いません。表示更新で学習履歴は変更されません。';
+const foot=document.createElement('p');foot.className='ts-foot';foot.textContent='理社の3メニューを毎日全部する必要はありません。週3〜4回を目安に理科・歴史・地理を交替し、1回5問・5〜10分程度。試験前は範囲に合わせて調整。学校の宿題と紙教材が優先で、時間が足りない日は短縮して構いません。表示更新で学習履歴は変更されません。';
 panel.append(heading,intro,updated,list,foot);
 const rows=[];
 for(let i=0;i<tasks.length;i++){
