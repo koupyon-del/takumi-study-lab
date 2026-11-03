@@ -2,7 +2,8 @@
    New inbox is independent of study_state; never deletes learning history.
    Authenticated learners read their own rows. Only server-side service_role
    can insert; browser may acknowledge after cloud-verified persistence.
-   Parent-verified items are applied automatically; unverified items wait. */
+   Parent-verified and tutor-reviewed items are automatically persisted.
+   Unreviewed evidence remains visible but is never auto-promoted. */
 (function(root){
 'use strict';
 function isMissingTable(error){
@@ -67,7 +68,8 @@ function renderRecent(){
   box.style.cssText='border-top:1px solid #eee;padding:9px 0;font-size:12px;line-height:1.65';
   const date=r.payload?.sourceDate||'採点日記録なし';
   const status=r.applied_at?'クラウド反映済み':r.dismissed_at?'除外':
-   r.review_status==='parent_verified'?'反映処理待ち':'保護者の答案確認待ち';
+   r.review_status==='tutor_reviewed'?'家庭教師評価・自動反映待ち':
+   r.review_status==='parent_verified'?'保護者確認済み・自動反映待ち':'評価未確定・受信済み';
   box.appendChild(textNode('strong',date+' 紙教材　'+status));
   const when=r.applied_at?' ／ クラウド反映：'+localTime(r.applied_at):
    r.dismissed_at?' ／ 除外：'+localTime(r.dismissed_at):
@@ -85,7 +87,7 @@ async function loadRecent(){
  recent=Array.isArray(data)?data:[];
  renderRecent();
 }
-function humanGrade(grade){return {good:'○ 定着',maybe:'△ あやしい',weak:'× 要復習'}[grade]||grade}
+function humanGrade(grade){return {good:'○ 良好（紙評価）',maybe:'△ 要確認',weak:'× 要復習'}[grade]||grade}
 function preview(parsed){
  return parsed.items.map(x=>(typeof labels!=='undefined'?labels[x.cat]||x.cat:x.cat)+'／'+x.unit+' '+humanGrade(x.grade)).join('\n');
 }
@@ -104,14 +106,14 @@ async function acknowledge(row,col){
  if(error)throw error;
  if(!data||!data[col])throw Error('クラウドの処理完了日時を確認できません。再読み込みして状態を確認してください。');
 }
-async function applyRow(row,approved){
- if(!active()||!client())return false;
- if(row.review_status!=='parent_verified'&&!approved)return false;
- if(polling&&approved){setStatus('自動受信を確認中です。受信確認ボタンで更新してからもう一度お試しください。');return false;}
+const autoReady=row=>row?.review_status==='parent_verified'||row?.review_status==='tutor_reviewed';
+async function applyRow(row){
+ if(!active()||!client()||!autoReady(row))return false;
  try{
   const parsed=root.TakumiTrust.validatePaperPayload(row.payload);
-  const out=root.TakumiTrust.importVerifiedPaperPayload(row.payload,
-    approved?'verified_paper_inbox_parent':'verified_paper_inbox_auto');
+  const source=row.review_status==='tutor_reviewed'
+   ?'tutor_reviewed_paper_inbox_auto':'verified_paper_inbox_auto';
+  const out=root.TakumiTrust.importVerifiedPaperPayload(row.payload,source);
   // Local save is not sufficient: ACK only after the entire evidence batch
   // has been persisted to the authenticated cloud study_state record.
   await cloudPush();
@@ -150,18 +152,11 @@ function render(){
   const data=textNode('p',preview(parsed));
   data.style.cssText='font-size:12px;line-height:1.7;white-space:pre-wrap;margin:6px 0';
   box.append(head,data);
-  const controls=root.document.createElement('div');controls.style.cssText='display:flex;gap:8px';
-  const ok=textNode('button','答案確認済み・登録');
-  ok.type='button';ok.className='secondary';ok.style.flex='1';
-  ok.onclick=async()=>{
-   if(!root.confirm('紙の答案を保護者が確認し、自力で解いた評価であることを確認しましたか？\n'+parsed.sourceDate+'／'+parsed.items.length+'単元'))return;
-   ok.disabled=true;
-   await applyRow(row,true);
-   ok.disabled=false;
-  };
-  const no=textNode('button','除外');no.type='button';no.className='secondary';
+  box.appendChild(textNode('p','採点の根拠が未確定のため、この記録は自動反映されません。家庭教師側で内容を確認して公開します。'));
+  const no=textNode('button','この記録を除外');
+  no.type='button';no.className='secondary';
   no.onclick=()=>dismiss(row);
-  controls.append(ok,no);box.append(controls);area.append(box);
+  box.appendChild(no);area.appendChild(box);
  }
 }
 async function poll(){
@@ -178,21 +173,21 @@ async function poll(){
    throw error;
   }
   const rows=Array.isArray(data)?data:[];
-  pending=rows.filter(x=>x.review_status!=='parent_verified');
+  pending=rows.filter(x=>!autoReady(x));
   render();
   let imported=0,failed=0;
-  for(const row of rows.filter(x=>x.review_status==='parent_verified')){
-    if(await applyRow(row,false))imported++;else failed++;
+  for(const row of rows.filter(autoReady)){
+    if(await applyRow(row))imported++;else failed++;
   }
   try{await loadRecent()}catch(e){console.warn('Paper inbox history unavailable:',e)}
-  if(imported)setStatus(imported+'件の確認済み採点結果を自動反映しました。履歴には採点日と処理日時を表示します。');
+  if(imported)setStatus(imported+'件の採点結果を自動反映しました。評価の出所と処理日時は履歴に表示します。');
   else if(failed)setStatus('自動反映できなかった結果があります。学習履歴は保持し、次回再試行します。');
-  else if(pending.length)setStatus('保護者の答案確認が必要な採点結果が'+pending.length+'件あります。');
+  else if(pending.length)setStatus('採点が未確定の受信記録が'+pending.length+'件あります。家庭教師側の確認が必要です。');
   else setStatus('自動受信は有効です。新しい採点結果を待っています。受信済み・確認待ち・処理済みは下の履歴で確認できます。');
  }catch(e){setStatus('自動受信の確認に失敗しました。履歴は変更していません：'+String(e.message||e))}
  finally{polling=false}
 }
-api.poll=poll;api.applyRow=applyRow;api.getStatus=()=>lastStatus;api.pendingCount=()=>pending.length;
+api.poll=poll;api.applyRow=applyRow;api.getStatus=()=>lastStatus;api.pendingCount=()=>pending.length;api.isAutoReady=autoReady;
 const originalOpenPaper=openPaper;
 openPaper=function(...args){const r=originalOpenPaper(...args);panel();void poll();return r};
 const originalCloudLoadOrSeed=cloudLoadOrSeed;
