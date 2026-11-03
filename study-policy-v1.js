@@ -124,6 +124,16 @@ async function poll(){
  }catch(e){lastError=String(e?.message||e)}
  finally{busy=false;display()}
 }
+const previousReport=buildReport;
+buildReport=function(...args){
+ const text=previousReport(...args),p=effectivePlan();
+ if(!p)return text+'\n【家庭教師方針のクラウド連携】\n有効な公開方針なし／クラウド確認：'+(lastError?'エラー '+lastError:time(checkedAt))+'\n';
+ const focus=['math','english'].map(cat=>(cat==='math'?'数学':'英語')+'：'+list(cat).map(x=>x.unit+'(+'+x.weight+')').join('、')).join('\n');
+ return text+'\n【家庭教師方針のクラウド連携】\n'+(p.title||'学習方針')+
+  '\n版：'+(current?.revision||'?')+'／公開：'+time(current?.updated_at)+
+  '\n対象：'+(p.startsOn||'未指定')+'〜'+(p.endsOn||'未指定')+'\n'+focus+
+  '\n注意：会話だけでクラウドは更新されない。公開済み方針のみが反映対象。\n';
+};
 root.TakumiStudyPolicy={weight,units,poll,refresh:display,effectivePlan,version:'3.12'};
 const oldLoad=cloudLoadOrSeed;
 cloudLoadOrSeed=async function(...args){
