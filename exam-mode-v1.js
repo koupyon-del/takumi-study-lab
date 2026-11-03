@@ -22,8 +22,9 @@ function subject(cat){
  if(!Array.isArray(x.excludedIds))x.excludedIds=[];
  return x;
 }
-function availableUnits(cat){return [...new Set((data[cat]||[]).map(q=>q.u))]}
+function availableUnits(cat){return [...new Set((data[cat]||[]).filter(q=>!window.TakumiCurriculum?.isReadingPaused?.(cat,q.u)).map(q=>q.u))]}
 function isAllowed(cat,q){
+ if(window.TakumiCurriculum?.isReadingPaused?.(cat,q.u))return false;
  const scope=subject(cat);
  return scope.units.includes(q.u)&&!scope.excludedIds.includes(q.id);
 }
@@ -64,6 +65,7 @@ function openScope(cat){
 function drawScope(){
  const root=document.getElementById('exam-config-root');root.innerHTML='';
  root.appendChild(make('p','教科ごとに考査範囲の単元を選択します。選択していない単元は考査モードで出題しません。通常の基礎リカバリーやMI授業復習の設定には影響しません。','legend'));
+ root.appendChild(make('p','※国語の読解・文学作品の読解問題は文章品質の再点検まで休止中です。現在は選択・出題しません。','legend'));
  const main=make('div',undefined,'qbox');
  main.appendChild(make('label','考査名（任意）','exam-label'));
  const name=make('input');name.type='text';name.maxLength=80;name.placeholder='例：2学期期末考査';name.value=settings().title;
