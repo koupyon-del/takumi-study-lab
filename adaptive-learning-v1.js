@@ -59,7 +59,7 @@ function unitNeed(cat,u,ev){
  let need=grade==='weak'?60:grade==='maybe'?35:grade==='good'?-10:5;
  if(s?.count>=5)need+=Math.round((1-s.rate)*70);
  else if(s?.count>0)need+=15;
- return need;
+ return need+(window.TakumiStudyPolicy?.weight?.(cat,u)||0);
 }
 function lastAttempt(id){
  const t=window.TakumiTrust?.score?.(id);
