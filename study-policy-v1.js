@@ -85,7 +85,7 @@ function display(){
  const heading=make('b',p.title||'学習方針');body.appendChild(heading);
  if(p.overview)body.appendChild(make('p',p.overview));
  if(!effectivePlan()){body.appendChild(make('p','期間外の方針は出題優先順位に適用しません。'));return}
- for(const [cat,name] of [['math','数学'],['english','英語']]){
+ for(const [cat,name] of [['math','数学'],['english','英語'],['science','理科'],['history','歴史'],['geography','地理']]){
   const chosen=list(cat);if(!chosen.length)continue;
   body.appendChild(make('b',name+'の重点：'));
   const ul=make('ul',undefined,'ts-policy-rows');
@@ -128,7 +128,8 @@ const previousReport=buildReport;
 buildReport=function(...args){
  const text=previousReport(...args),p=effectivePlan();
  if(!p)return text+'\n【家庭教師方針のクラウド連携】\n有効な公開方針なし／クラウド確認：'+(lastError?'エラー '+lastError:time(checkedAt))+'\n';
- const focus=['math','english'].map(cat=>(cat==='math'?'数学':'英語')+'：'+list(cat).map(x=>x.unit+'(+'+x.weight+')').join('、')).join('\n');
+ const subjects={math:'数学',english:'英語',science:'理科',history:'歴史',geography:'地理'};
+ const focus=Object.entries(subjects).map(([cat,name])=>name+'：'+(list(cat).map(x=>x.unit+'(+'+x.weight+')').join('、')||'重点指定なし')).join('\n');
  return text+'\n【家庭教師方針のクラウド連携】\n'+(p.title||'学習方針')+
   '\n版：'+(current?.revision||'?')+'／公開：'+time(current?.updated_at)+
   '\n対象：'+(p.startsOn||'未指定')+'〜'+(p.endsOn||'未指定')+'\n'+focus+
