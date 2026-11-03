@@ -103,7 +103,7 @@ function unitNeed(cat,u,ev){
  if(test&&(!paper?.sourceDate||test.date>=String(paper.sourceDate))){
   score+=test.grade==='weak'?62:test.grade==='maybe'?26:-9;
  }
- return score;
+ return score+(window.TakumiStudyPolicy?.weight?.(cat,u)||0);
 }
 function score(q,group,ev,mode){
  const x=stateOf(q,group,ev),unit=unitNeed((group.cat||''),q.u,ev);
