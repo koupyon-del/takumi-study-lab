@@ -10,7 +10,14 @@ const tasks=[
 ];
 function allowedPool(task){
  const statuses=window.TakumiCurriculum;
- return (data[task.cat]||[]).filter(q=>task.units.includes(q.u)&&statuses?.status?.(task.cat,q.u)!=='future');
+ // Morning remains foundation-only. After-school topics may include tutor-published
+ // priorities, but never unlock future units or override the school's scope.
+ const recommended=task.title.startsWith('朝')?[]:(window.TakumiStudyPolicy?.units?.(task.cat)||[]);
+ const units=new Set([...task.units,...recommended]);
+ return (data[task.cat]||[]).filter(q=>
+  units.has(q.u)&&statuses?.status?.(task.cat,q.u)!=='future'&&
+  !statuses?.isReadingPaused?.(task.cat,q.u)&&
+  statuses?.isAllowed?.(task.cat,q,'mi')===true);
 }
 function evidence(){
  const answerEvents=Object.values(window.TakumiTrust?.store?.()?.answers||{});
@@ -66,8 +73,8 @@ function runTask(index){
 }
 const panel=document.createElement('section');
 panel.className='ts-focus';
-const heading=document.createElement('h3');heading.textContent='個別補習メニュー｜学習結果で更新';
-const intro=document.createElement('p');intro.textContent='保護者確認済みの紙評価、自力回答、授業進度から、メニュー内の重点単元を毎回選び直します。4択だけで定着とは判定しません。';
+const heading=document.createElement('h3');heading.textContent='個別補習メニュー｜家庭教師方針・学習結果で更新';
+const intro=document.createElement('p');intro.textContent='クラウド公開済みの家庭教師方針、保護者確認済みの紙評価、自力回答、授業進度から、重点単元を毎回選び直します。4択だけで定着とは判定しません。';
 const updated=document.createElement('p');updated.className='ts-focus-updated';
 const list=document.createElement('div');list.className='ts-task-list';
 const foot=document.createElement('p');foot.className='ts-foot';foot.textContent='学校の宿題と紙教材が優先です。合唱祭などで時間が足りない日は短縮して構いません。表示更新で学習履歴は変更されません。';
