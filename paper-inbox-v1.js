@@ -61,22 +61,26 @@ function renderRecent(){
  const area=p.querySelector('#paperInboxRecent');area.textContent='';
  const heading=textNode('h4','最近の受信・同期履歴');heading.style.cssText='font-size:14px;margin:15px 0 6px';
  area.appendChild(heading);
- if(!recent.length){area.appendChild(textNode('p','同期済みの受信記録はまだありません。'));return}
+ if(!recent.length){area.appendChild(textNode('p','受信記録はまだありません。'));return}
  for(const r of recent){
   const box=root.document.createElement('div');
   box.style.cssText='border-top:1px solid #eee;padding:9px 0;font-size:12px;line-height:1.65';
   const date=r.payload?.sourceDate||'採点日記録なし';
-  const status=r.applied_at?'クラウド反映済み':r.dismissed_at?'除外':'未処理';
+  const status=r.applied_at?'クラウド反映済み':r.dismissed_at?'除外':
+   r.review_status==='parent_verified'?'反映処理待ち':'保護者の答案確認待ち';
   box.appendChild(textNode('strong',date+' 紙教材　'+status));
-  box.appendChild(textNode('p','受信：'+localTime(r.created_at)+' ／ 処理：'+localTime(r.applied_at||r.dismissed_at)));
+  const when=r.applied_at?' ／ クラウド反映：'+localTime(r.applied_at):
+   r.dismissed_at?' ／ 除外：'+localTime(r.dismissed_at):
+   ' ／ クラウド反映：未完了';
+  box.appendChild(textNode('p','受信：'+localTime(r.created_at)+when));
   area.appendChild(box);
  }
 }
 async function loadRecent(){
  const {data,error}=await client().from('paper_evidence_inbox')
-  .select('id,payload,created_at,applied_at,dismissed_at')
-  .eq('user_id',cloudUser.id).not('applied_at','is',null)
-  .order('applied_at',{ascending:false}).limit(8);
+  .select('id,payload,review_status,created_at,applied_at,dismissed_at')
+  .eq('user_id',cloudUser.id)
+  .order('created_at',{ascending:false}).limit(12);
  if(error)throw error;
  recent=Array.isArray(data)?data:[];
  renderRecent();
@@ -94,14 +98,16 @@ async function confirmInCloud(ids){
 async function acknowledge(row,col){
  if(!['applied_at','dismissed_at'].includes(col))throw Error('不正な確認項目です。');
  const patch={[col]:new Date().toISOString()};
- const {error}=await client().from('paper_evidence_inbox').update(patch).eq('id',row.id)
-   .eq('user_id',cloudUser.id).is('applied_at',null).is('dismissed_at',null);
+ const {data,error}=await client().from('paper_evidence_inbox').update(patch).eq('id',row.id)
+   .eq('user_id',cloudUser.id).is('applied_at',null).is('dismissed_at',null)
+   .select('id,applied_at,dismissed_at').maybeSingle();
  if(error)throw error;
+ if(!data||!data[col])throw Error('クラウドの処理完了日時を確認できません。再読み込みして状態を確認してください。');
 }
 async function applyRow(row,approved){
  if(!active()||!client())return false;
  if(row.review_status!=='parent_verified'&&!approved)return false;
- if(polling&&approved)return false;
+ if(polling&&approved){setStatus('自動受信を確認中です。受信確認ボタンで更新してからもう一度お試しください。');return false;}
  try{
   const parsed=root.TakumiTrust.validatePaperPayload(row.payload);
   const out=root.TakumiTrust.importVerifiedPaperPayload(row.payload,
@@ -127,7 +133,7 @@ async function applyRow(row,approved){
 }
 async function dismiss(row){
  if(!root.confirm('この採点結果を取り込まずに受信一覧から除外しますか？'))return;
- try{await acknowledge(row,'dismissed_at');pending=pending.filter(x=>x.id!==row.id);render()}
+ try{await acknowledge(row,'dismissed_at');pending=pending.filter(x=>x.id!==row.id);await loadRecent();render()}
  catch(e){setStatus('除外できませんでした：'+String(e.message||e))}
 }
 function render(){
@@ -182,7 +188,7 @@ async function poll(){
   if(imported)setStatus(imported+'件の確認済み採点結果を自動反映しました。履歴には採点日と処理日時を表示します。');
   else if(failed)setStatus('自動反映できなかった結果があります。学習履歴は保持し、次回再試行します。');
   else if(pending.length)setStatus('保護者の答案確認が必要な採点結果が'+pending.length+'件あります。');
-  else setStatus('自動受信は有効です。新しい採点結果を待っています。処理済みの記録は下の履歴で確認できます。');
+  else setStatus('自動受信は有効です。新しい採点結果を待っています。受信済み・確認待ち・処理済みは下の履歴で確認できます。');
  }catch(e){setStatus('自動受信の確認に失敗しました。履歴は変更していません：'+String(e.message||e))}
  finally{polling=false}
 }
