@@ -410,6 +410,7 @@ function drawStudyPlan(cat){
  const intro=document.createElement('p');intro.className='legend';
  intro.textContent='表示中の進度には以前の初期推定が含まれます。「確認済み」と表示されない項目は学校の実際の進度が未確認です。学校で扱った内容を確認してから切り替えてください。シラバスの月は予定であり、現在の授業進度を自動判定しません。';
  root.appendChild(intro);
+ if(cat==='japanese'){const notice=document.createElement('p');notice.className='legend';notice.textContent='⏸ 国語の読解・文学作品の問題は文章品質の点検が済むまで出題休止中です。現在は語彙・文法・故事成語・表現の知識問題を学習します。';root.appendChild(notice);}
  const strict=document.createElement('button');strict.className='secondary';strict.style.width='100%';strict.style.marginBottom='9px';
  strict.textContent='MI・発展モード：確認済み単元のみ出題 '+(cfg().strictOnly?'ON':'OFF');
  strict.onclick=()=>{const c=cfg();c.strictOnly=!c.strictOnly;c.strictUpdatedAt=Date.now();c.updatedAt=c.strictUpdatedAt;save();drawStudyPlan(cat);drawCards();};
@@ -429,7 +430,7 @@ function drawStudyPlan(cat){
   item.className='plan-item';
   const top=document.createElement('div');top.className='plan-title';
   const left=document.createElement('b');left.textContent=u;
-  const hint=document.createElement('span');hint.className='small';hint.textContent=t+'／収録'+stats.questions+'問／'+(isConfirmed(cat,u)?'✅ 確認済み':'⚠ 未確認（仮設定）');
+  const hint=document.createElement('span');hint.className='small';hint.textContent=t+'／収録'+stats.questions+'問／'+(isReadingPaused(cat,u)?'⏸ 出題休止':isConfirmed(cat,u)?'✅ 確認済み':'⚠ 未確認（仮設定）');
   top.append(left,hint);item.appendChild(top);
   const seg=document.createElement('div');seg.className='plan-seg';
   for(const [v,txt] of [['future','未習'],['now','授業中'],['learned','既習']]){
