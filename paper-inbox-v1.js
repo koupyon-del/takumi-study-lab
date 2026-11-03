@@ -19,7 +19,7 @@ root.TakumiPaperInbox=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(!root.document||!root.TakumiTrust)return;
 let polling=false,disabled=false,pending=[],recent=[],lastStatus='';
-const intervalMs=120000;
+const intervalMs=45000;
 function active(){return typeof cloudUser!=='undefined'&&cloudUser&&typeof cloudReady!=='undefined'&&cloudReady}
 function client(){return typeof sb!=='undefined'?sb:null}
 function panel(){
@@ -39,7 +39,11 @@ function panel(){
  status.style.lineHeight='1.7';
  const list=root.document.createElement('div');list.id='paperInboxRows';
  const history=root.document.createElement('div');history.id='paperInboxRecent';
- p.append(h,status,list,history);
+ const refresh=root.document.createElement('button');
+ refresh.type='button';refresh.className='secondary';
+ refresh.textContent='☁ 今すぐ受信を確認';
+ refresh.onclick=()=>{void poll()};
+ p.append(h,status,refresh,list,history);
  const target=page.querySelector('.tabs')||page.querySelector('details')||page.lastChild;
  page.insertBefore(p,target);
  return p;
