@@ -86,6 +86,20 @@ document.getElementById('app').addEventListener('load',()=>{
   lessonArea.querySelectorAll('.ts-decision-choices button')[0].click();
   if(!lessonArea.textContent.includes('約4秒後に次へ進みます'))throw Error('auto-next feedback absent');
   lessonArea.querySelector('#ts-inline-next').click(); // manual progression must cancel the pending timer.
+  // Regression: the paper sheet uses legacy printed titles, but live lectures were renamed.
+  const paper=w.TakumiPaperStudyGuide;
+  if(!paper)throw Error('paper-to-app navigator missing');
+  for(const task of paper.tasks.filter(t=>t.type==='lesson')){
+   if(paper.validate(task)!=='ok')throw Error('paper lecture ID was rejected due to a title rewrite: '+task.id);
+   const live=api.lessonList.find(x=>x.id===task.id);
+   if(!live)throw Error('paper lecture ID missing: '+task.id);
+   paper.dispatch(task);
+   if(!d.getElementById('ts-video-screen').textContent.includes(live.title))
+    throw Error('paper navigation opened the wrong lecture: '+task.id);
+  }
+  paper.open();
+  if(!d.getElementById('ts-paper-study-screen').textContent.includes('アプリ内の現在の講座名'))
+   throw Error('paper navigator does not show updated lecture names');
   output.textContent='PASS: 81 lessons, 11 overviews, math and English lecture screens';
  }catch(error){output.textContent='FAIL: '+String(error.message||error)}
 });
