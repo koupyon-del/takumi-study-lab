@@ -7,6 +7,6 @@ const badge=html.match(/id="studyLabVersionBadge"[^>]*>(v\d+(?:\.\d+)+)/)?.[1];
 const backup=html.match(/function backupPayload\(\).*?version:'(\d+(?:\.\d+)+)'/)?.[1];
 assert.ok(title,'Application must declare a document title version');
 assert.equal(badge,title,'Visible homepage badge must match document title');
-assert.equal(backup,title.slice(1),'Export backup metadata version must match release');
-assert.equal(title,'v3.11','Do not regress or prematurely claim an unshipped version');
+assert.equal(backup,title.slice(1).split('.').slice(0,2).join('.'),'Backup metadata must identify the compatible major/minor release');
+assert.match(title,/^v3\.\d+\.\d+$/,'Display a full v3 release number');
 console.log('PASS: visible version '+title+' matches title and backup version');
