@@ -1,4 +1,4 @@
-/* 巧澄 Study Lab v3.12.4 — paper-to-app navigator.
+/* 巧澄 Study Lab v3.12.5 — paper-to-app navigator.
    UI-only bridge: never changes curriculum settings, historic answers, trust grades, or cloud state.
    Every route is checked against current runtime lesson IDs and canonical question-unit names. */
 (function(){
@@ -16,8 +16,10 @@ const tasks=[
 const catNames={math:'数学',english:'英語',japanese:'国語',science:'理科',history:'歴史',geography:'地理',waka:'百人一首'};
 const lessonApi=()=>window.TakumiVideoLessons;
 const deckApi=()=>window.TakumiRequestDeck;
-function knownLesson(id,expected){
- const api=lessonApi();return Boolean(api?.openLesson&&api?.lessonList?.some(l=>l.id===id&&(!expected||l.title===expected)));
+function knownLesson(id){
+ // The ID is the stable route key. Lesson titles may change as teaching content improves.
+ const api=lessonApi();
+ return Boolean(typeof api?.openLesson==='function'&&api?.lessonList?.some(l=>l.id===id));
 }
 function knownUnit(cat,u){return Boolean((data[cat]||[]).some(q=>q.u===u))}
 function availableUnit(cat,u){
@@ -25,7 +27,7 @@ function availableUnit(cat,u){
  return Boolean(d?.subjectPool&&d.subjectPool(cat).some(q=>q.u===u));
 }
 function validate(task){
- if(task.type==='lesson')return knownLesson(task.id,task.expected)?'ok':'missing-lesson';
+ if(task.type==='lesson')return knownLesson(task.id)?'ok':'missing-lesson';
  if(!knownUnit(task.cat,task.unit))return 'missing-unit';
  return availableUnit(task.cat,task.unit)?'ok':'unavailable';
 }
@@ -59,6 +61,10 @@ function buttonFor(task){
 function addTask(root,task){
  const card=mk('div',null,'ts-paper-study-card');
  card.appendChild(mk('strong',task.printed));
+ if(task.type==='lesson'){
+  const live=lessonApi()?.lessonList?.find(l=>l.id===task.id);
+  if(live&&live.title!==task.expected)card.appendChild(mk('p','アプリ内の現在の講座名：'+live.title,'ts-paper-study-note'));
+ }
  card.appendChild(mk('p',task.description));
  card.appendChild(buttonFor(task));
  root.appendChild(card);
@@ -76,7 +82,8 @@ const aliases={
 function liveCatalog(){
  const found=[],seen=new Set();
  for(const l of lessonApi()?.lessonList||[]){
-  const task={type:'lesson',printed:'板書授業：'+l.title,expected:l.title,id:l.id,description:'講座 '+(l.group||'')};
+  const oldPrint=tasks.find(t=>t.type==='lesson'&&t.id===l.id);
+  const task={type:'lesson',printed:'板書授業：'+l.title,expected:oldPrint?.expected||l.title,id:l.id,description:'講座 '+(l.group||'')};
   if(!seen.has('lesson:'+l.id)){found.push(task);seen.add('lesson:'+l.id)}
  }
  for(const [cat,qs] of Object.entries(data)){
@@ -134,5 +141,5 @@ entry.appendChild(action);
 const css=mk('style');
 css.textContent='.ts-paper-study-entry{background:#eef4fb;border:1px solid #b9d0e4;padding:14px;margin:12px 0;border-radius:15px}.ts-paper-study-entry strong{font-size:16px}.ts-paper-study-entry p,.ts-paper-study-note{color:#405569;font-size:13px;line-height:1.6}.ts-paper-study-home-button,.ts-paper-study-action{width:100%;border:none;border-radius:10px;padding:11px 14px;margin-top:7px;background:#215a81;color:#fff;font-weight:700}.ts-paper-study-card{background:#fff;border:1px solid #e1e6ec;border-radius:12px;padding:13px;margin:9px 0}.ts-paper-study-card strong{font-size:14px;line-height:1.6}.ts-paper-study-card p{font-size:12px;color:#5a6570;margin:6px 0}.ts-paper-study-unavailable{background:#687681}.ts-paper-study-screen h3{font-size:16px;margin-top:20px}.ts-paper-study-search{display:block;width:100%;padding:12px;border:1px solid #c7d1d8;border-radius:10px;font-size:15px}.ts-paper-study-warning{color:#9e3d2e;font-size:13px}.ts-paper-study-manifest{background:#fff;border-radius:12px;margin-top:16px;padding:12px}.ts-paper-study-manifest-content{font-size:12px;line-height:1.7;overflow-wrap:anywhere}';
 document.head.appendChild(css);
-window.TakumiPaperStudyGuide={open,validate,dispatch,liveCatalog,tasks,version:'3.12.4'};
+window.TakumiPaperStudyGuide={open,validate,dispatch,liveCatalog,tasks,version:'3.12.5'};
 })();
