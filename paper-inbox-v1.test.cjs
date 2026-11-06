@@ -34,7 +34,7 @@ const context={
          {...row('processed','parent_verified'),applied_at:'2026-10-30T14:49:09Z'}
        ]:queue,error:null});},
        update(p){mode='update';change=p;return this;},
-       then(resolve,reject){if(mode==='update'){ack.push({...change});return resolve({data:null,error:null})}return reject(Error('invalid'));}
+       maybeSingle(){if(mode==='update'){ack.push({...change});return Promise.resolve({data:{id:'mock',...change},error:null})}return Promise.reject(Error('invalid'))}
      };return query;
    }
  },
