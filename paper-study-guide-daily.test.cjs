@@ -51,7 +51,7 @@ const panel=new FakeElement('section');guide.renderAtDate('2026-11-16',panel);
 const nodes=all(panel);
 assert.ok(nodes.some(n=>n.textContent.includes('2026年11月16日')),'Date shown');
 assert.ok(nodes.some(n=>n.textContent.includes('紙教材は作成済み')),'Actual handout acknowledged');
-assert.ok(nodes.some(n=>n.textContent.includes('符号・分数・代入')),'Original print instructions used');
+assert.ok(nodes.some(n=>n.textContent.includes('分数・代入・連立')),'Original print instructions used');
 assert.ok(!panel.children.some(n=>n.textContent.includes('11月7日')),'Nov7 not the visible assignment');
 const examButtons=nodes.filter(n=>typeof n.onclick==='function'&&String(n.textContent).includes('期末厳選10問'));
 assert.equal(examButtons.length,2);
