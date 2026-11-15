@@ -103,6 +103,7 @@ function display(){
 function refreshSelections(){
  root.TakumiDailyFocus?.refresh?.();
  root.TakumiCurriculum?.refresh?.();
+ root.TakumiPaperStudyGuide?.refresh?.();
 }
 async function poll(){
  if(busy)return;
