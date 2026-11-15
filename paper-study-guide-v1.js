@@ -1,4 +1,4 @@
-/* 巧澄 Study Lab v3.12.5 — paper-to-app navigator.
+/* 巧澄 Study Lab v3.12.7 — date-aware paper-to-app navigator.
    UI-only bridge: never changes curriculum settings, historic answers, trust grades, or cloud state.
    Every route is checked against current runtime lesson IDs and canonical question-unit names. */
 (function(){
@@ -14,6 +14,65 @@ const tasks=[
  {type:'deck',printed:'理科・リクエストデッキ「気象・湿度」5問',cat:'science',unit:'気象・湿度',count:5,description:'理科の「気象・湿度」で5問の設定を開く'}
 ];
 const catNames={math:'数学',english:'英語',japanese:'国語',science:'理科',history:'歴史',geography:'地理',waka:'百人一首'};
+
+const fallbackNov16={
+ status:'material_ready',
+ paper:[{subject:'数学',minutes:25,summary:'正負・分数・代入・連立10分、不等式・反比例・合同15分'},{subject:'地理',minutes:20,summary:'ヨーロッパの暖流と偏西風、アフリカのサヘル・コンゴ盆地、EUの説明'},{subject:'英語',minutes:10,summary:'過去形、did not、進行形の疑問文、was/were'}],
+ app:[{cat:'geography',minutes:15,summary:'地理の期末厳選10問'},{cat:'math',minutes:10,summary:'数学の期末厳選10問。途中式は紙に書く'},{minutes:5,summary:'選択肢の誤答理由を確認'}],
+ selfStudy:'数学数量の問題集p.61〜71から25分／地理のアフリカp.80〜91を20分／図形提出課題15分',
+ notes:'11/16の紙教材は本人用プリントで配布済み。'
+};
+function tokyoDate(){
+ return new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+}
+function tomorrow(day){const n=new Date(day+'T00:00:00Z').getTime();return Number.isFinite(n)?new Date(n+86400000).toISOString().slice(0,10):day}
+function getDay(given){
+ const date=typeof given==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(given)?given:tokyoDate();
+ const rows=window.TakumiStudyPolicy?.effectivePlan?.()?.paperDaily||{};
+ const read=day=>{
+  const v=Object.prototype.hasOwnProperty.call(rows,day)?rows[day]:null;
+  if(v&&Array.isArray(v.paper)&&Array.isArray(v.app))return v;
+  return day==='2026-11-16'?fallbackNov16:null;
+ };
+ const d=read(date);if(d)return {date,day:d,kind:'today'};
+ const next=tomorrow(date),e=read(next);
+ if(e)return {date:next,day:e,kind:'tomorrow'};
+ return {date,day:null,kind:'missing'};
+}
+function labelDate(date){const a=date.split('-');return a[0]+'年'+Number(a[1])+'月'+Number(a[2])+'日'}
+function examReady(cat){return Boolean(window.TakumiExamQuality20261115?.start&&(data[cat]||[]).some(q=>q.examQuality==='mi2026-2nd-final'))}
+function renderToday(root){
+ const info=getDay(),day=info.day;
+ root.appendChild(mk('h3',(info.kind==='tomorrow'?'明日の予告｜':'今日の指示｜')+labelDate(info.date)));
+ if(!day){
+  root.appendChild(mk('p','この日の課題は未登録です。学習方針のクラウド連携を確認してください。11/7の課題を今日のものとして表示しません。','ts-paper-study-warning'));return;
+ }
+ root.appendChild(mk('p',day.status==='material_ready'?'紙教材は作成済みです。実際の問題は配布済みの本人用プリントを参照。':'日別学習計画です。紙の個別問題が作成済みとは限りません。','ts-paper-study-note'));
+ function rows(title,items,app){
+  root.appendChild(mk('h3',title));
+  for(const t of items){
+   const card=mk('div',null,'ts-paper-study-card');
+   const name=t.subject||(t.cat?catNames[t.cat]||t.cat:'誤答の復習');
+   card.appendChild(mk('strong',name+(Number(t.minutes)>0?'｜'+Number(t.minutes)+'分':'')));
+   if(t.summary)card.appendChild(mk('p',t.summary));
+   if(app&&t.cat){
+    const btn=mk('button','▶ '+(catNames[t.cat]||t.cat)+'の期末厳選10問を開く','ts-paper-study-action');
+    btn.type='button';if(!examReady(t.cat))btn.classList.add('ts-paper-study-unavailable');
+    btn.onclick=()=>{if(!examReady(t.cat)){alert('期末厳選問題が未読込です。再読み込みしてください。');return}window.TakumiExamQuality20261115.start(t.cat)};
+    card.appendChild(btn);
+   }
+   root.appendChild(card);
+  }
+ }
+ rows('紙教材｜55分',day.paper,false);
+ rows('アプリ｜30分',day.app,true);
+ root.appendChild(mk('h3','本人の自己採点・記録｜5分'));
+ root.appendChild(mk('p','間違いを知識・方針・計算・読み違い・時間切れに分類し、自分で解き直す。','ts-paper-study-note'));
+ root.appendChild(mk('h3','自主学習｜60分'));
+ root.appendChild(mk('p',day.selfStudy||'学校の教科書・問題集と提出物を優先','ts-paper-study-note'));
+ if(day.notes)root.appendChild(mk('p','※ '+day.notes,'ts-paper-study-note'));
+}
+
 const lessonApi=()=>window.TakumiVideoLessons;
 const deckApi=()=>window.TakumiRequestDeck;
 function knownLesson(id){
@@ -114,10 +173,12 @@ function open(){
  const back=mk('button','← ホーム','back');back.type='button';back.onclick=()=>show('home');screen.appendChild(back);
  screen.appendChild(mk('h2','📄 紙課題からアプリを開く'));
  screen.appendChild(mk('p','紙課題に書かれた「板書授業の講座名」と「4択問題の単元名」は別です。この画面からそれぞれの正しい場所へ進めます。','ts-paper-study-note'));
- screen.appendChild(mk('h3','2026年11月7日の紙課題｜指定された4つの操作'));
- const box=mk('div',null,'ts-paper-study-tasks');
- for(const task of tasks)addTask(box,task);
- screen.appendChild(box);
+ renderToday(screen);
+ const archived=mk('details',null,'ts-paper-study-manifest');
+ archived.appendChild(mk('summary','過去の紙課題：2026年11月7日'));
+ const archivedTasks=mk('div',null,'ts-paper-study-tasks');
+ for(const t of tasks)addTask(archivedTasks,t);
+ archived.appendChild(archivedTasks);screen.appendChild(archived);
  screen.appendChild(mk('h3','ほかの日の紙課題・単元名を探す'));
  const input=mk('input',null,'ts-paper-study-search');input.type='search';input.placeholder='例：代入法／Does＋動詞原形／湿度／証明';
  input.setAttribute('aria-label','紙課題に記載された講座・単元名を検索');
@@ -134,12 +195,16 @@ function open(){
 }
 const entry=mk('section',null,'ts-paper-study-entry');entry.id='ts-paper-study-entry';
 entry.appendChild(mk('strong','📄 紙課題とアプリの連携'));
-entry.appendChild(mk('p','11/7の課題で指定した板書2講座・英語5問・理科5問へ、名前を探さず進めます。'));
+const summary=mk('p',null,'ts-paper-study-home-summary');entry.appendChild(summary);
+function refresh(){const x=getDay();summary.textContent=(x.kind==='tomorrow'?'明日':'今日')+' '+labelDate(x.date)+'｜'+(x.day?'紙55分・アプリ30分・自主学習60分':'最新の指示を確認');}
 const action=mk('button','今日の紙課題の指示を開く','ts-paper-study-home-button');action.type='button';action.onclick=open;
 entry.appendChild(action);
 (home.querySelector('.top')||home.firstElementChild)?.after(entry);
 const css=mk('style');
 css.textContent='.ts-paper-study-entry{background:#eef4fb;border:1px solid #b9d0e4;padding:14px;margin:12px 0;border-radius:15px}.ts-paper-study-entry strong{font-size:16px}.ts-paper-study-entry p,.ts-paper-study-note{color:#405569;font-size:13px;line-height:1.6}.ts-paper-study-home-button,.ts-paper-study-action{width:100%;border:none;border-radius:10px;padding:11px 14px;margin-top:7px;background:#215a81;color:#fff;font-weight:700}.ts-paper-study-card{background:#fff;border:1px solid #e1e6ec;border-radius:12px;padding:13px;margin:9px 0}.ts-paper-study-card strong{font-size:14px;line-height:1.6}.ts-paper-study-card p{font-size:12px;color:#5a6570;margin:6px 0}.ts-paper-study-unavailable{background:#687681}.ts-paper-study-screen h3{font-size:16px;margin-top:20px}.ts-paper-study-search{display:block;width:100%;padding:12px;border:1px solid #c7d1d8;border-radius:10px;font-size:15px}.ts-paper-study-warning{color:#9e3d2e;font-size:13px}.ts-paper-study-manifest{background:#fff;border-radius:12px;margin-top:16px;padding:12px}.ts-paper-study-manifest-content{font-size:12px;line-height:1.7;overflow-wrap:anywhere}';
 document.head.appendChild(css);
-window.TakumiPaperStudyGuide={open,validate,dispatch,liveCatalog,tasks,version:'3.12.5'};
+refresh();
+window.addEventListener?.('focus',refresh);
+document.addEventListener?.('visibilitychange',refresh);
+window.TakumiPaperStudyGuide={open,validate,dispatch,liveCatalog,tasks,getDay,refresh,version:'3.12.7'};
 })();
