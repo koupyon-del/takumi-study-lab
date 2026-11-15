@@ -26,6 +26,24 @@ for(const cat of cats){
  }
 }
 const html=fs.readFileSync('index.html','utf8');
+
+/* Integration test against the actual legacy bank and every loaded pre-curriculum
+   expansion: catches exact duplicate stems that isolated fixture tests miss. */
+const bankTag='exam-quality-bank-20261115.js';
+const initial=html.match(/const data=(\{.*\});\r?\nconst labels=/);
+assert.ok(initial,'Initial question bank must be available in the page');
+const live=JSON.parse(initial[1]);
+const liveWindow={};
+const scripts=[...html.matchAll(/<script src="([^"]+\.js)(?:\?[^"]*)?"><\/script>/g)].map(m=>m[1]);
+const bankIndex=scripts.indexOf(bankTag);
+assert.ok(bankIndex>0,'Question bank script must load before curriculum');
+for(const script of scripts.slice(0,bankIndex)){
+ if(!fs.existsSync(script))continue; // External scripts never feed the local question bank
+ vm.runInNewContext(fs.readFileSync(script,'utf8'),{data:live,window:liveWindow,console},{filename:script});
+}
+vm.runInNewContext(fs.readFileSync(bankTag,'utf8'),{data:live,window:liveWindow,console},{filename:bankTag});
+assert.equal(liveWindow.TakumiExamQualityBank.total,80,'New questions must load alongside all legacy banks');
+
 assert.ok(html.includes('exam-quality-bank-20261115.js?v=1'));
 assert.ok(html.includes('exam-quality-router-20261115.js?v=1'));
 assert.ok(html.indexOf('exam-quality-bank-20261115.js')<html.indexOf('quality-v1.js'),'Bank must precede duplicate-quality indexing');
