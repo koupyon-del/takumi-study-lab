@@ -38,6 +38,7 @@ const scripts=[...html.matchAll(/<script src="([^"]+\.js)(?:\?[^"]*)?"><\/script
 const bankIndex=scripts.indexOf(bankTag);
 assert.ok(bankIndex>0,'Question bank script must load before curriculum');
 for(const script of scripts.slice(0,bankIndex)){
+ if(script==='waka-school-v1.js')continue; // This separate UI module touches document; not the six exam subjects
  if(!fs.existsSync(script))continue; // External scripts never feed the local question bank
  vm.runInNewContext(fs.readFileSync(script,'utf8'),{data:live,window:liveWindow,console},{filename:script});
 }
