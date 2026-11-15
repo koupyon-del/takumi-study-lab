@@ -57,8 +57,8 @@ function getDay(given){
 }
 function labelDate(date){const a=date.split('-');return a[0]+'年'+Number(a[1])+'月'+Number(a[2])+'日'}
 function examReady(cat){return Boolean(window.TakumiExamQuality20261115?.start&&(data[cat]||[]).some(q=>q.examQuality==='mi2026-2nd-final'))}
-function renderToday(root){
- const info=getDay(),day=info.day;
+function renderToday(root,given){
+ const info=getDay(given),day=info.day;
  root.appendChild(mk('h3',(info.kind==='tomorrow'?'明日の予告｜':'今日の指示｜')+labelDate(info.date)));
  if(!day){
   root.appendChild(mk('p','この日の課題は未登録です。学習方針のクラウド連携を確認してください。11/7の課題を今日のものとして表示しません。','ts-paper-study-warning'));return;
@@ -224,5 +224,5 @@ document.head.appendChild(css);
 refresh();
 window.addEventListener?.('focus',refresh);
 document.addEventListener?.('visibilitychange',refresh);
-window.TakumiPaperStudyGuide={open,validate,dispatch,liveCatalog,tasks,getDay,refresh,version:'3.12.7'};
+window.TakumiPaperStudyGuide={open,validate,dispatch,liveCatalog,tasks,getDay,renderAtDate:(date,root)=>renderToday(root,date),refresh,version:'3.12.7'};
 })();
