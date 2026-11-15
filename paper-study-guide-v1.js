@@ -28,11 +28,27 @@ function tokyoDate(){
 function tomorrow(day){const n=new Date(day+'T00:00:00Z').getTime();return Number.isFinite(n)?new Date(n+86400000).toISOString().slice(0,10):day}
 function getDay(given){
  const date=typeof given==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(given)?given:tokyoDate();
- const rows=window.TakumiStudyPolicy?.effectivePlan?.()?.paperDaily||{};
+ const plan=window.TakumiStudyPolicy?.effectivePlan?.();
+ const full=plan?.paperDaily||{};
+ const compact=Array.isArray(plan?.paperDailyRows)?plan.paperDailyRows:[];
  const read=day=>{
-  const v=Object.prototype.hasOwnProperty.call(rows,day)?rows[day]:null;
+  const v=Object.prototype.hasOwnProperty.call(full,day)?full[day]:null;
   if(v&&Array.isArray(v.paper)&&Array.isArray(v.app))return v;
-  return day==='2026-11-16'?fallbackNov16:null;
+  if(day==='2026-11-16')return fallbackNov16;
+  const a=compact.find(row=>Array.isArray(row)&&row.length>=9&&row[0]===day);
+  if(!a)return null;
+  if(day==='2026-12-02')return {status:'planned',
+    paper:[{subject:'試験最終日',minutes:0,summary:'国語・地理・美術・OC。試験終了後は休養'}],
+    app:[],selfStudy:'試験後は休養し、未提出物の確認のみ。',notes:'試験最終日につき通常の学習枠は課さない。'};
+  const examDay=day>='2026-11-28';
+  return {status:'planned',
+   paper:[{subject:'数学',minutes:25,summary:a[1]},{subject:a[2],minutes:20,summary:a[3]},{subject:a[4],minutes:10,summary:a[5]}],
+   app:[{cat:a[6],minutes:examDay?20:15,summary:'期末厳選問題10問'},
+        {cat:a[7],minutes:10,summary:'期末厳選問題10問'},
+        ...examDay?[]:[{minutes:5,summary:'誤答の理由を確認'}]],
+   selfStudy:a[8],notes:examDay
+    ?'試験当日・試験後は疲労に応じて短縮。各教科の提出物を優先する。'
+    :'日別計画。個別の紙問題・解答が配布済みとは限らない。'};
  };
  const d=read(date);if(d)return {date,day:d,kind:'today'};
  const next=tomorrow(date),e=read(next);
@@ -64,11 +80,13 @@ function renderToday(root){
    root.appendChild(card);
   }
  }
- rows('紙教材｜55分',day.paper,false);
- rows('アプリ｜30分',day.app,true);
- root.appendChild(mk('h3','本人の自己採点・記録｜5分'));
- root.appendChild(mk('p','間違いを知識・方針・計算・読み違い・時間切れに分類し、自分で解き直す。','ts-paper-study-note'));
- root.appendChild(mk('h3','自主学習｜60分'));
+ const paperMinutes=day.paper.reduce((n,t)=>n+Math.max(0,Number(t.minutes)||0),0);
+ const appMinutes=day.app.reduce((n,t)=>n+Math.max(0,Number(t.minutes)||0),0);
+ rows('紙教材・試験対応｜'+(paperMinutes?paperMinutes+'分':'任意'),day.paper,false);
+ if(appMinutes)rows('アプリ｜'+appMinutes+'分',day.app,true);
+ if(day.app.length){root.appendChild(mk('h3','本人の自己採点・記録｜5分'));
+ root.appendChild(mk('p','間違いを知識・方針・計算・読み違い・時間切れに分類し、自分で解き直す。','ts-paper-study-note'));}
+ root.appendChild(mk('h3',day.app.length?'自主学習｜60分':'試験後の過ごし方'));
  root.appendChild(mk('p',day.selfStudy||'学校の教科書・問題集と提出物を優先','ts-paper-study-note'));
  if(day.notes)root.appendChild(mk('p','※ '+day.notes,'ts-paper-study-note'));
 }
