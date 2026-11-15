@@ -27,6 +27,8 @@ jobs:
         run: node exam-quality-20261115.test.cjs
       - name: Verify displayed Study Lab version is consistent
         run: node app-version.test.cjs
+      - name: Verify dated paper assignments update and no old November 7 default
+        run: node paper-study-guide-daily.test.cjs
       - name: Verify paper navigator resolves renamed video lessons and both practice decks
         run: node paper-study-guide-v1.test.cjs
       - name: Verify paper evidence link import and deduplication
