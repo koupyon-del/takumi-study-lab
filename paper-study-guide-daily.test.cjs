@@ -35,7 +35,7 @@ const context={window:{
 vm.runInNewContext(fs.readFileSync('paper-study-guide-v1.js','utf8'),context);
 const guide=context.window.TakumiPaperStudyGuide;
 assert.ok(guide,'Guide exposed');
-assert.equal(guide.version,'3.12.7');
+assert.equal(guide.version,'3.13.1');
 assert.equal(guide.getDay('2026-11-15').date,'2026-11-16');
 assert.equal(guide.getDay('2026-11-15').kind,'tomorrow');
 assert.equal(guide.getDay('2026-11-16').day.app[0].cat,'geography');
