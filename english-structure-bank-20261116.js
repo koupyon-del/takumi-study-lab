@@ -186,10 +186,10 @@ function mc(unit,stem,answers,explanation,level){
 for(const x of catalog){
  const s=x.s,v=x.v,past=x.past,o=x.object,be=x.be,ing=x.ing;
  mc('過去形','【文法のしくみ】「'+s+' は昨日'+o+'」と同じ意味の英文は？',[
-   x.pastStatement,s+' '+(x.third)+' '+o+' yesterday.',s+' did '+past+' '+o+' yesterday.',s+' '+be+' '+v+' '+o+' yesterday.'
+   x.pastStatement,s+' '+(x.third)+' '+o+' yesterday.',s+' did '+(past===v?x.third:past)+' '+o+' yesterday.',s+' '+be+' '+v+' '+o+' yesterday.'
  ],'yesterdayは過去。一般動詞の過去の肯定文は '+past+'。did＋過去形やbe＋原形は使わない。',3);
  mc('疑問文・否定文','【文法のしくみ】'+x.pastStatement+' の正しい過去の否定文は？',[
-   x.pastNegative,s+' does not '+v+' '+o+' yesterday.',s+' did not '+past+' '+o+' yesterday.',s+' '+be+' not '+v+' '+o+' yesterday.'
+   x.pastNegative,s+' does not '+v+' '+o+' yesterday.',s+' did not '+(past===v?x.third:past)+' '+o+' yesterday.',s+' '+be+' not '+v+' '+o+' yesterday.'
  ],'過去の否定文では did not＋原形 '+v+'。didを使ったら '+past+' の過去形を重ねない。',3);
  mc('現在進行形','【文法のしくみ】'+s+' は今'+o+'。現在進行形として正しいのは？',[
    x.progress,s+' '+be+' '+v+' '+o+' now.',s+' '+x.third+' '+o+' now.',s+' '+(be==='is'?'was':'were')+' '+ing+' '+o+' now.'
