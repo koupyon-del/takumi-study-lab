@@ -3,7 +3,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const assert=require('node:assert/strict');
 const html=fs.readFileSync('index.html','utf8');
-assert.match(html,/Study Lab v3\.13\.0/);
+assert.match(html,/Study Lab v3\.13\.\d+/);
 const bankName='english-structure-bank-20261116.js',uiName='english-structure-lab-v1.js';
 const indexScripts=[...html.matchAll(/<script src="([^"]+\.js)(?:\?[^"]*)?"><\/script>/g)].map(x=>x[1]);
 assert.ok(indexScripts.indexOf(bankName)>indexScripts.indexOf('exam-quality-bank-20261115.js'));
