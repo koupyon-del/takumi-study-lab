@@ -1,4 +1,4 @@
-/* 巧澄 Study Lab v3.12.7 — date-aware paper-to-app navigator.
+/* 巧澄 Study Lab v3.13.1 — date-aware paper-to-app navigator.
    UI-only bridge: never changes curriculum settings, historic answers, trust grades, or cloud state.
    Every route is checked against current runtime lesson IDs and canonical question-unit names. */
 (function(){
@@ -72,9 +72,17 @@ function renderToday(root,given){
    card.appendChild(mk('strong',name+(Number(t.minutes)>0?'｜'+Number(t.minutes)+'分':'')));
    if(t.summary)card.appendChild(mk('p',t.summary));
    if(app&&t.cat){
-    const btn=mk('button','▶ '+(catNames[t.cat]||t.cat)+'の期末厳選10問を開く','ts-paper-study-action');
-    btn.type='button';if(!examReady(t.cat))btn.classList.add('ts-paper-study-unavailable');
-    btn.onclick=()=>{if(!examReady(t.cat)){alert('期末厳選問題が未読込です。再読み込みしてください。');return}window.TakumiExamQuality20261115.start(t.cat)};
+    const grammar=t.cat==='english';
+    const btn=mk('button',grammar?'▶ 英文法ラボ（入力式・詳しい解説）を開く':'▶ '+(catNames[t.cat]||t.cat)+'の期末厳選10問を開く','ts-paper-study-action');
+    btn.type='button';if(grammar?!window.TakumiEnglishStructureLab:!examReady(t.cat))btn.classList.add('ts-paper-study-unavailable');
+    btn.onclick=()=>{
+      if(grammar){
+        if(!window.TakumiEnglishStructureLab?.menu){alert('英文法ラボが読み込まれていません。再読み込みしてください。');return}
+        window.TakumiEnglishStructureLab.menu();return;
+      }
+      if(!examReady(t.cat)){alert('期末厳選問題が未読込です。再読み込みしてください。');return}
+      window.TakumiExamQuality20261115.start(t.cat);
+    };
     card.appendChild(btn);
    }
    root.appendChild(card);
@@ -224,5 +232,5 @@ document.head.appendChild(css);
 refresh();
 window.addEventListener?.('focus',refresh);
 document.addEventListener?.('visibilitychange',refresh);
-window.TakumiPaperStudyGuide={open,validate,dispatch,liveCatalog,tasks,getDay,renderAtDate:(date,root)=>renderToday(root,date),refresh,version:'3.12.7'};
+window.TakumiPaperStudyGuide={open,validate,dispatch,liveCatalog,tasks,getDay,renderAtDate:(date,root)=>renderToday(root,date),refresh,version:'3.13.1'};
 })();
