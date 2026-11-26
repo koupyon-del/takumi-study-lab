@@ -83,7 +83,9 @@ function display(){
  const p=current?.plan;
  if(!p)return;
  const heading=make('b',p.title||'学習方針');body.appendChild(heading);
- if(p.overview)body.appendChild(make('p',p.overview));
+ const sheet=p.paperDaily?.[todayTokyo()];
+ if(sheet?.status==='material_ready')body.appendChild(make('p',sheet.notes));
+ else if(p.overview)body.appendChild(make('p',p.overview));
  if(!effectivePlan()){body.appendChild(make('p','期間外の方針は出題優先順位に適用しません。'));return}
  for(const [cat,name] of [['math','数学'],['english','英語'],['science','理科'],['history','歴史'],['geography','地理']]){
   const chosen=list(cat);if(!chosen.length)continue;
@@ -92,7 +94,10 @@ function display(){
   for(const item of chosen.slice(0,7))ul.appendChild(make('li',item.unit+'（優先度+'+item.weight+'）'+(item.reason?' — '+item.reason:'')));
   body.appendChild(ul);
  }
- if(Array.isArray(p.daily)&&p.daily.length){
+ if(sheet?.status==='material_ready'){
+  body.appendChild(make('b','配布済みプリントの日程'));
+  for(const task of [...sheet.paper,...sheet.app])body.appendChild(make('p',(task.subject||task.unit)+' '+task.minutes+'分　'+task.summary));
+ }else if(Array.isArray(p.daily)&&p.daily.length){
   body.appendChild(make('b','1日の学習枠'));
   const ul=make('ul',undefined,'ts-policy-rows');
   for(const d of p.daily)ul.appendChild(make('li',d.label+'（最大'+d.maxMinutes+'分） '+d.description));
