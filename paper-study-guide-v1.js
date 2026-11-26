@@ -22,6 +22,91 @@ const fallbackNov16={
  selfStudy:'数学数量の問題集p.61〜71から25分／地理のアフリカp.80〜91を20分／図形提出課題15分',
  notes:'11/16の紙教材は本人用プリントで配布済み。'
 };
+const printedDays={
+ "2026-11-26": {
+  "paper": [
+   {
+    "subject": "数量",
+    "minutes": 15,
+    "summary": "p.2 M1・M2　不等式・反比例"
+   },
+   {
+    "subject": "英語",
+    "minutes": 15,
+    "summary": "p.2 E1・E2　過去形・代名詞"
+   },
+   {
+    "subject": "理科B",
+    "minutes": 10,
+    "summary": "p.2 B1　湿度"
+   },
+   {
+    "subject": "幾何",
+    "minutes": 10,
+    "summary": "p.3　学校教材から四角形１問"
+   },
+   {
+    "subject": "国語",
+    "minutes": 10,
+    "summary": "p.3　J1・百人一首"
+   }
+  ],
+  "app": [],
+  "selfStudy": "残りは自由に使う。",
+  "notes": "朝30分・放課後30分。丸つけ込み。",
+  "status": "material_ready",
+  "recordMinutes": 0,
+  "selfStudyTitle": "学習時間の使い方"
+ },
+ "2026-11-27": {
+  "paper": [
+   {
+    "subject": "数量",
+    "minutes": 40,
+    "summary": "p.4 M3・M4を中心に比例・反比例。図書館では問題集p.76～87の類題へ。M5は不等式の式だけ確認。"
+   },
+   {
+    "subject": "英語",
+    "minutes": 35,
+    "summary": "p.5 E3②の理由と③のmakingを直し、学校の単元テストへ。"
+   },
+   {
+    "subject": "理科B",
+    "minutes": 25,
+    "summary": "p.5 B2・B3は取り組み済み。残りは学校プリントの天気記号と誤答。"
+   },
+   {
+    "subject": "学校教材",
+    "minutes": 25,
+    "summary": "午前に最も困った教科を１つ。"
+   },
+   {
+    "subject": "国語",
+    "minutes": 10,
+    "summary": "アプリの後に文法の誤答１問と漢字３語。"
+   }
+  ],
+  "app": [
+   {
+    "cat": "geography",
+    "unit": "アフリカ",
+    "minutes": 8,
+    "summary": "アフリカの誤答を解き直し、コンゴ盆地とサヘルを地図で確認。"
+   },
+   {
+    "cat": "science",
+    "unit": "人体のつくり",
+    "minutes": 7,
+    "summary": "人体の誤答を解き直し、血液の３成分の働きを説明。"
+   }
+  ],
+  "selfStudy": "学校教材25分は上の150分に含む。解き終えた紙を最初からやり直す必要はありません。",
+  "notes": "午前100分。午後は学校教材25分→地理8分→理科A7分→国語10分。",
+  "status": "material_ready",
+  "recordMinutes": 0,
+  "selfStudyTitle": "学習時間の使い方"
+ }
+};
 function tokyoDate(){
  return new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 }
@@ -34,6 +119,7 @@ function getDay(given){
  const read=day=>{
   const v=Object.prototype.hasOwnProperty.call(full,day)?full[day]:null;
   if(v&&Array.isArray(v.paper)&&Array.isArray(v.app))return v;
+  if(printedDays[day])return printedDays[day];
   if(day==='2026-11-16')return fallbackNov16;
   const a=compact.find(row=>Array.isArray(row)&&row.length>=9&&row[0]===day);
   if(!a)return null;
@@ -71,7 +157,9 @@ function renderToday(root,given){
    const name=t.subject||(t.cat?catNames[t.cat]||t.cat:'誤答の復習');
    card.appendChild(mk('strong',name+(Number(t.minutes)>0?'｜'+Number(t.minutes)+'分':'')));
    if(t.summary)card.appendChild(mk('p',t.summary));
-   if(app&&t.cat){
+   if(app&&t.unit){
+    card.appendChild(buttonFor({type:'deck',cat:t.cat,unit:t.unit,count:5}));
+   }else if(app&&t.cat){
     const grammar=t.cat==='english';
     const btn=mk('button',grammar?'▶ 英文法ラボ（入力式・詳しい解説）を開く':'▶ '+(catNames[t.cat]||t.cat)+'の期末厳選10問を開く','ts-paper-study-action');
     btn.type='button';if(grammar?!window.TakumiEnglishStructureLab:!examReady(t.cat))btn.classList.add('ts-paper-study-unavailable');
@@ -92,9 +180,9 @@ function renderToday(root,given){
  const appMinutes=day.app.reduce((n,t)=>n+Math.max(0,Number(t.minutes)||0),0);
  rows('紙教材・試験対応｜'+(paperMinutes?paperMinutes+'分':'任意'),day.paper,false);
  if(appMinutes)rows('アプリ｜'+appMinutes+'分',day.app,true);
- if(day.app.length){root.appendChild(mk('h3','本人の自己採点・記録｜5分'));
+ if(day.app.length && day.recordMinutes!==0){root.appendChild(mk('h3','本人の自己採点・記録｜5分'));
  root.appendChild(mk('p','間違いを知識・方針・計算・読み違い・時間切れに分類し、自分で解き直す。','ts-paper-study-note'));}
- root.appendChild(mk('h3',day.app.length?'自主学習｜60分':'試験後の過ごし方'));
+ root.appendChild(mk('h3',day.selfStudyTitle||(day.app.length?'自主学習｜60分':'試験後の過ごし方')));
  root.appendChild(mk('p',day.selfStudy||'学校の教科書・問題集と提出物を優先','ts-paper-study-note'));
  if(day.notes)root.appendChild(mk('p','※ '+day.notes,'ts-paper-study-note'));
 }
@@ -222,7 +310,7 @@ function open(){
 const entry=mk('section',null,'ts-paper-study-entry');entry.id='ts-paper-study-entry';
 entry.appendChild(mk('strong','📄 紙課題とアプリの連携'));
 const summary=mk('p',null,'ts-paper-study-home-summary');entry.appendChild(summary);
-function refresh(){const x=getDay();summary.textContent=(x.kind==='tomorrow'?'明日':'今日')+' '+labelDate(x.date)+'｜'+(x.day?'紙55分・アプリ30分・自主学習60分':'最新の指示を確認');}
+function refresh(){const x=getDay();summary.textContent=(x.kind==='tomorrow'?'明日':'今日')+' '+labelDate(x.date)+'｜'+(x.day?'紙・学校教材 '+x.day.paper.reduce((n,t)=>n+(Number(t.minutes)||0),0)+'分／アプリ '+x.day.app.reduce((n,t)=>n+(Number(t.minutes)||0),0)+'分':'最新の指示を確認');}
 const action=mk('button','今日の紙課題の指示を開く','ts-paper-study-home-button');action.type='button';action.onclick=open;
 entry.appendChild(action);
 (home.querySelector('.top')||home.firstElementChild)?.after(entry);
