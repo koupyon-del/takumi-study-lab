@@ -145,7 +145,7 @@ function labelDate(date){const a=date.split('-');return a[0]+'年'+Number(a[1])+
 function examReady(cat){return Boolean(window.TakumiExamQuality20261115?.start&&(data[cat]||[]).some(q=>q.examQuality==='mi2026-2nd-final'))}
 function renderToday(root,given){
  const info=getDay(given),day=info.day;
- root.appendChild(mk('h3',(info.kind==='tomorrow'?'明日の予告｜':'今日の指示｜')+labelDate(info.date)));
+ root.appendChild(mk('h3',(info.date===tomorrow(tokyoDate())?'明日の予告｜':'今日の指示｜')+labelDate(info.date)));
  if(!day){
   root.appendChild(mk('p','この日の課題は未登録です。学習方針のクラウド連携を確認してください。11/7の課題を今日のものとして表示しません。','ts-paper-study-warning'));return;
  }
@@ -158,7 +158,7 @@ function renderToday(root,given){
    card.appendChild(mk('strong',name+(Number(t.minutes)>0?'｜'+Number(t.minutes)+'分':'')));
    if(t.summary)card.appendChild(mk('p',t.summary));
    if(app&&t.unit){
-    card.appendChild(buttonFor({type:'deck',cat:t.cat,unit:t.unit,count:5}));
+    card.appendChild(buttonFor({type:'deck',cat:t.cat,unit:t.unit,count:5,selection:'weak'}));
    }else if(app&&t.cat){
     const grammar=t.cat==='english';
     const btn=mk('button',grammar?'▶ 英文法ラボ（入力式・詳しい解説）を開く':'▶ '+(catNames[t.cat]||t.cat)+'の期末厳選10問を開く','ts-paper-study-action');
@@ -217,7 +217,7 @@ function dispatch(task){
   return;
  }
  const d=deckApi();if(!d){alert('リクエストデッキが読み込めませんでした。');return}
- d.form.cat=task.cat;d.form.unit=task.unit;d.form.skill=task.skill||'all';d.form.level='auto';d.form.selection='balanced';d.form.count=task.count||5;
+ d.form.cat=task.cat;d.form.unit=task.unit;d.form.skill=task.skill||'all';d.form.level='auto';d.form.selection=task.selection||'balanced';d.form.count=task.count||5;
  d.open(); // opens the real selector, with the paper's canonical unit preselected
 }
 function buttonFor(task){
@@ -288,6 +288,11 @@ function open(){
  screen.appendChild(mk('h2','📄 紙課題からアプリを開く'));
  screen.appendChild(mk('p','紙課題に書かれた「板書授業の講座名」と「4択問題の単元名」は別です。この画面からそれぞれの正しい場所へ進めます。','ts-paper-study-note'));
  renderToday(screen);
+ const nextDate=tomorrow(tokyoDate());
+ if(getDay(nextDate).date===nextDate && getDay(nextDate).day?.status==='material_ready'){
+  const preview=mk('details');preview.appendChild(mk('summary','明日の紙課題を確認'));
+  const content=mk('div');renderToday(content,nextDate);preview.appendChild(content);screen.appendChild(preview);
+ }
  const archived=mk('details',null,'ts-paper-study-manifest');
  archived.appendChild(mk('summary','過去の紙課題：2026年11月7日'));
  const archivedTasks=mk('div',null,'ts-paper-study-tasks');
